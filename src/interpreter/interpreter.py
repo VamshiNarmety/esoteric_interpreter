@@ -1,6 +1,6 @@
 """Simple Interpreter for basic arthimetic expressions"""
 
-from src.lexer.token import Token, INTEGER, PLUS, MINUS, EOF
+from src.lexer.token import Token, INTEGER, PLUS, MINUS, EOF, MUL, DIV
 
 class Interpreter:
     def __init__(self, text):
@@ -53,6 +53,14 @@ class Interpreter:
                 self.advance()
                 return Token(MINUS, '-')
             
+            if self.current_char=='*':
+                self.advance()
+                return Token(MUL, '*')
+            
+            if self.current_char=='/':
+                self.advance()
+                return Token(DIV, '/')
+            
             self.error()
 
         return Token(EOF, None)
@@ -72,21 +80,31 @@ class Interpreter:
         This method both parses and interprets the expression.
         """
         self.current_token = self.get_next_token()
-        left = self.current_token
+        result = self.current_token.value
         self.eat(INTEGER)
 
-        op = self.current_token
-        if op.type==PLUS:
-            self.eat(PLUS)
-        else:
-            self.eat(MINUS)
-        right = self.current_token
-        self.eat(INTEGER)
-
-        if op.type==PLUS:
-            result = left.value + right.value
-        else:
-            result = left.value - right.value
+        while self.current_token.type in (PLUS, MINUS, MUL, DIV):
+            token = self.current_token
+            if token.type==PLUS:
+                self.eat(PLUS)
+                result = result + self.current_token.value
+                self.eat(INTEGER)
+            elif token.type==MINUS:
+                self.eat(MINUS)
+                result = result - self.current_token.value
+                self.eat(INTEGER)
+            elif token.type==MUL:
+                self.eat(MUL)
+                result = result * self.current_token.value
+                self.eat(INTEGER)
+            elif token.type==DIV:
+                self.eat(DIV)
+                result = result // self.current_token.value
+                self.eat(INTEGER)
+        
+        if self.current_token.type!=EOF:
+            self.error()
+            
         return result
     
 

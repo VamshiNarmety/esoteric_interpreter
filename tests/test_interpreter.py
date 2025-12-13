@@ -37,7 +37,7 @@ def test_invalid_syntax_missing_operand():
         interpreter.expr()
 
 def test_invalid_character():
-    interpreter = Interpreter('3*5')
+    interpreter = Interpreter('3$5')
     with pytest.raises(Exception):
         interpreter.expr()
 
@@ -60,3 +60,24 @@ def test_multi_digit_with_spaces():
     interpreter = Interpreter('123 + 456')
     result = interpreter.expr()
     assert result == 579
+
+def test_multiplication():
+    interpreter = Interpreter(' 3 * 5 ')
+    result = interpreter.expr()
+    assert result == 15
+
+def test_division():
+    interpreter = Interpreter(' 10 / 2 ')
+    result = interpreter.expr()
+    assert result == 5
+
+def test_multiple_operations():
+    interpreter = Interpreter(' 7+3 -2 ')
+    result = interpreter.expr()
+    assert result == 8
+
+def test_all_four_operations_without_precedence():
+    """Test all four operations."""
+    interpreter = Interpreter('10 - 3 + 5 * 2 / 2')
+    result = interpreter.expr()
+    assert result == 12
