@@ -40,3 +40,23 @@ def test_invalid_character():
     interpreter = Interpreter('3*5')
     with pytest.raises(Exception):
         interpreter.expr()
+
+def test_multi_digit_addition():
+    interpreter = Interpreter('12+34')
+    result = interpreter.expr()
+    assert result == 46
+
+def test_multi_digit_subtraction():
+    interpreter = Interpreter('100-50')
+    result = interpreter.expr()
+    assert result == 50
+
+def test_large_numbers():
+    interpreter = Interpreter('999+1')
+    result = interpreter.expr()
+    assert result == 1000
+
+def test_multi_digit_with_spaces():
+    interpreter = Interpreter('123 + 456')
+    result = interpreter.expr()
+    assert result == 579
