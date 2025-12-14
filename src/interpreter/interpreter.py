@@ -3,6 +3,12 @@
 from src.lexer.token import Token, INTEGER, PLUS, MINUS, EOF, MUL, DIV
 
 class Interpreter:
+    """
+    A simple Interpreter for arthimetic expressions.
+    Grammar:
+        expr: term ((PLUS|MINUS) term)*
+        term: INTEGER ((MUL|DIV) INTEGER)*
+    """
     def __init__(self, text):
         self.text = text
         self.pos = 0
@@ -75,25 +81,16 @@ class Interpreter:
         else:
             self.error()
 
-    def expr(self):
+    def term(self):
         """
-        This method both parses and interprets the expression.
+        term: INTEGER ((MUL|DIV) INTEGER)*
+        Handles mul and div (higher precedence)
         """
-        self.current_token = self.get_next_token()
         result = self.current_token.value
         self.eat(INTEGER)
-
-        while self.current_token.type in (PLUS, MINUS, MUL, DIV):
+        while self.current_token.type in (MUL, DIV):
             token = self.current_token
-            if token.type==PLUS:
-                self.eat(PLUS)
-                result = result + self.current_token.value
-                self.eat(INTEGER)
-            elif token.type==MINUS:
-                self.eat(MINUS)
-                result = result - self.current_token.value
-                self.eat(INTEGER)
-            elif token.type==MUL:
+            if token.type==MUL:
                 self.eat(MUL)
                 result = result * self.current_token.value
                 self.eat(INTEGER)
@@ -101,6 +98,25 @@ class Interpreter:
                 self.eat(DIV)
                 result = result // self.current_token.value
                 self.eat(INTEGER)
+
+        return result
+
+    def expr(self):
+        """
+        expr: term ((PLUS|MINUS) term)*
+        Handles add and sub(lower precedence). calls term() for MUL/DIV.
+        """
+        self.current_token = self.get_next_token()
+        result = self.term()
+
+        while self.current_token.type in (PLUS, MINUS):
+            token = self.current_token
+            if token.type==PLUS:
+                self.eat(PLUS)
+                result = result + self.term()
+            elif token.type==MINUS:
+                self.eat(MINUS)
+                result = result - self.term()
         
         if self.current_token.type!=EOF:
             self.error()

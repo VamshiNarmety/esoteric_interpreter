@@ -81,3 +81,24 @@ def test_all_four_operations_without_precedence():
     interpreter = Interpreter('10 - 3 + 5 * 2 / 2')
     result = interpreter.expr()
     assert result == 12
+
+def test_precedence_mul_before_add():
+    interpreter = Interpreter('2+3*4')
+    result = interpreter.expr()
+    assert result == 14
+
+def test_precedence_div_before_sub():
+    interpreter = Interpreter('10-8/4')
+    result = interpreter.expr()
+    assert result == 8
+
+def test_precedence_complex():
+    interpreter = Interpreter('7+3*2-4/2')
+    result = interpreter.expr()
+    assert result == 11
+
+def test_precedence_left_to_right_same_level():
+    interpreter = Interpreter('10/2*3')
+    result = interpreter.expr()
+    assert result == 15
+
