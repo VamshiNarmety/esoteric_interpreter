@@ -13,7 +13,7 @@ def main():
             if not text:
                 continue
             interpreter = Interpreter(text)
-            result = interpreter.expr()
+            result = interpreter.parse()
             print(result)
         except EOFError:
             print("Exit")

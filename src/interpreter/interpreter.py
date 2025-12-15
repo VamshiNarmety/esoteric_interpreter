@@ -1,6 +1,6 @@
 """Simple Interpreter for basic arthimetic expressions"""
 
-from src.lexer.token import Token, INTEGER, PLUS, MINUS, EOF, MUL, DIV
+from src.lexer.token import Token, INTEGER, PLUS, MINUS, EOF, MUL, DIV, LPAREN, RPAREN
 
 class Interpreter:
     """
@@ -8,6 +8,7 @@ class Interpreter:
     Grammar:
         expr: term ((PLUS|MINUS) term)*
         term: INTEGER ((MUL|DIV) INTEGER)*
+        factor: INTEGER | LPAREN expr RPAREN
     """
     def __init__(self, text):
         self.text = text
@@ -67,6 +68,14 @@ class Interpreter:
                 self.advance()
                 return Token(DIV, '/')
             
+            if self.current_char=='(':
+                self.advance()
+                return Token(LPAREN, '(')
+            
+            if self.current_char==')':
+                self.advance()
+                return Token(RPAREN, ')')
+            
             self.error()
 
         return Token(EOF, None)
@@ -81,23 +90,36 @@ class Interpreter:
         else:
             self.error()
 
+    def factor(self):
+        """
+        factor: INTEGER | LPAREN expr RPAREN
+        Handles integers and parenthesized expressions.
+        """
+        token = self.current_token
+
+        if token.type==INTEGER:
+            self.eat(INTEGER)
+            return token.value
+        elif token.type==LPAREN:
+            self.eat(LPAREN)
+            result = self.expr()
+            self.eat(RPAREN)
+            return result
+
     def term(self):
         """
-        term: INTEGER ((MUL|DIV) INTEGER)*
+        term: factor ((MUL|DIV) factor)*
         Handles mul and div (higher precedence)
         """
-        result = self.current_token.value
-        self.eat(INTEGER)
+        result = self.factor()
         while self.current_token.type in (MUL, DIV):
             token = self.current_token
             if token.type==MUL:
                 self.eat(MUL)
-                result = result * self.current_token.value
-                self.eat(INTEGER)
+                result = result * self.factor()
             elif token.type==DIV:
                 self.eat(DIV)
-                result = result // self.current_token.value
-                self.eat(INTEGER)
+                result = result // self.factor()
 
         return result
 
@@ -106,7 +128,8 @@ class Interpreter:
         expr: term ((PLUS|MINUS) term)*
         Handles add and sub(lower precedence). calls term() for MUL/DIV.
         """
-        self.current_token = self.get_next_token()
+        if self.current_token is None:
+            self.current_token = self.get_next_token()
         result = self.term()
 
         while self.current_token.type in (PLUS, MINUS):
@@ -117,10 +140,16 @@ class Interpreter:
             elif token.type==MINUS:
                 self.eat(MINUS)
                 result = result - self.term()
-        
+            
+        return result
+    
+    def parse(self):
+        """
+        Parses the expression and ensures all input is consumed.
+        """
+        result = self.expr()
         if self.current_token.type!=EOF:
             self.error()
-            
         return result
     
 
@@ -133,7 +162,7 @@ def main():
         if not text:
             continue
         interpreter = Interpreter(text)
-        result = interpreter.expr()
+        result = interpreter.parse()
         print(result)
 
 
