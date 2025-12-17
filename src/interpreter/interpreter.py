@@ -1,5 +1,5 @@
 """Simple Interpreter for basic arthimetic expressions"""
-
+from src.lexer.lexer import Lexer
 from src.lexer.token import Token, INTEGER, PLUS, MINUS, EOF, MUL, DIV, LPAREN, RPAREN
 
 class Interpreter:
@@ -11,74 +11,14 @@ class Interpreter:
         factor: INTEGER | LPAREN expr RPAREN
     """
     def __init__(self, text):
-        self.text = text
-        self.pos = 0
+        """Initialize the interpreter with input text.
+        """
+        self.lexer = Lexer(text)
         self.current_token = None
-        self.current_char = self.text[self.pos]
 
     def error(self):
         """Raise an exception for invalid syntax."""
-        raise Exception('Error parsing input')
-    
-    def advance(self):
-        """Move the 'pos' pointer and set the 'current_char' variable."""
-        self.pos+=1
-        if self.pos>len(self.text)-1:
-            self.current_char = None
-        else:
-            self.current_char = self.text[self.pos]
-        
-    def skip_whitespace(self):
-        while self.current_char is not None and self.current_char.isspace():
-            self.advance()
-
-    def integer(self):
-        result = ''
-        while self.current_char is not None and self.current_char.isdigit():
-            result+=self.current_char
-            self.advance()
-        return int(result)
-    
-    def get_next_token(self):
-        """
-        Lexical analyzer(scanner or tokenizer).
-        returns the next token from the input
-        """
-        while self.current_char is not None:
-            if self.current_char.isspace():
-                self.skip_whitespace()
-                continue
-
-            if self.current_char.isdigit():
-                return Token(INTEGER, self.integer())
-            
-            if self.current_char=='+':
-                self.advance()
-                return Token(PLUS, '+')
-            
-            if self.current_char=='-':
-                self.advance()
-                return Token(MINUS, '-')
-            
-            if self.current_char=='*':
-                self.advance()
-                return Token(MUL, '*')
-            
-            if self.current_char=='/':
-                self.advance()
-                return Token(DIV, '/')
-            
-            if self.current_char=='(':
-                self.advance()
-                return Token(LPAREN, '(')
-            
-            if self.current_char==')':
-                self.advance()
-                return Token(RPAREN, ')')
-            
-            self.error()
-
-        return Token(EOF, None)
+        raise Exception('Invalid syntax')
     
     def eat(self, token_type):
         """
@@ -86,7 +26,7 @@ class Interpreter:
         if they match, assign the next token to self.current_token. Otherwise, raise an exception.
         """
         if self.current_token.type==token_type:
-            self.current_token = self.get_next_token()
+            self.current_token = self.lexer.get_next_token()
         else:
             self.error()
 
@@ -129,7 +69,7 @@ class Interpreter:
         Handles add and sub(lower precedence). calls term() for MUL/DIV.
         """
         if self.current_token is None:
-            self.current_token = self.get_next_token()
+            self.current_token = self.lexer.get_next_token()
         result = self.term()
 
         while self.current_token.type in (PLUS, MINUS):
@@ -145,6 +85,7 @@ class Interpreter:
     
     def parse(self):
         """
+        Main entry point for parsing.
         Parses the expression and ensures all input is consumed.
         """
         result = self.expr()
