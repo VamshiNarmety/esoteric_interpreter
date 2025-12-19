@@ -3,6 +3,8 @@ import sys
 import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from src.lexer.lexer import Lexer
+from src.parser.parser import Parser
 from src.interpreter.interpreter import Interpreter
 
 def main():
@@ -12,8 +14,10 @@ def main():
             text = input('calc> ')
             if not text:
                 continue
-            interpreter = Interpreter(text)
-            result = interpreter.parse()
+            lexer = Lexer(text)
+            parser = Parser(lexer)
+            interpreter = Interpreter(parser)
+            result = interpreter.interpret()
             print(result)
         except EOFError:
             print("Exit")

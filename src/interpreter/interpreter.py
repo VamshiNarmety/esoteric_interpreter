@@ -1,111 +1,51 @@
-"""Simple Interpreter for basic arthimetic expressions"""
+"""
+Interpreter that walks the Abstract syntax tree.
+Uses the visitor to pattern to traverse and interpret AST nodes.
+"""
 from src.lexer.lexer import Lexer
-from src.lexer.token import Token, INTEGER, PLUS, MINUS, EOF, MUL, DIV, LPAREN, RPAREN
+from src.parser.parser import Parser
+from src.parser.ast_nodes import BinOp, Num
+from src.lexer.token import PLUS, MINUS, MUL, DIV
 
-class Interpreter:
+class NodeVisitor:
     """
-    A simple Interpreter for arthimetic expressions.
-    Grammar:
-        expr: term ((PLUS|MINUS) term)*
-        term: INTEGER ((MUL|DIV) INTEGER)*
-        factor: INTEGER | LPAREN expr RPAREN
+    Base visitor class.
+    Subclasses implement visit_NodeType methods.
     """
-    def __init__(self, text):
-        """Initialize the interpreter with input text.
-        """
-        self.lexer = Lexer(text)
-        self.current_token = None
-
-    def error(self):
-        """Raise an exception for invalid syntax."""
-        raise Exception('Invalid syntax')
+    def visit(self, node):
+        method_name = 'visit_'+type(node).__name__
+        visitor = getattr(self, method_name, self.generic_visit)
+        return visitor(node)
     
-    def eat(self, token_type):
-        """
-        Compare the current token type with the passed token type.
-        if they match, assign the next token to self.current_token. Otherwise, raise an exception.
-        """
-        if self.current_token.type==token_type:
-            self.current_token = self.lexer.get_next_token()
-        else:
-            self.error()
-
-    def factor(self):
-        """
-        factor: INTEGER | LPAREN expr RPAREN
-        Handles integers and parenthesized expressions.
-        """
-        token = self.current_token
-
-        if token.type==INTEGER:
-            self.eat(INTEGER)
-            return token.value
-        elif token.type==LPAREN:
-            self.eat(LPAREN)
-            result = self.expr()
-            self.eat(RPAREN)
-            return result
-
-    def term(self):
-        """
-        term: factor ((MUL|DIV) factor)*
-        Handles mul and div (higher precedence)
-        """
-        result = self.factor()
-        while self.current_token.type in (MUL, DIV):
-            token = self.current_token
-            if token.type==MUL:
-                self.eat(MUL)
-                result = result * self.factor()
-            elif token.type==DIV:
-                self.eat(DIV)
-                result = result // self.factor()
-
-        return result
-
-    def expr(self):
-        """
-        expr: term ((PLUS|MINUS) term)*
-        Handles add and sub(lower precedence). calls term() for MUL/DIV.
-        """
-        if self.current_token is None:
-            self.current_token = self.lexer.get_next_token()
-        result = self.term()
-
-        while self.current_token.type in (PLUS, MINUS):
-            token = self.current_token
-            if token.type==PLUS:
-                self.eat(PLUS)
-                result = result + self.term()
-            elif token.type==MINUS:
-                self.eat(MINUS)
-                result = result - self.term()
-            
-        return result
-    
-    def parse(self):
-        """
-        Main entry point for parsing.
-        Parses the expression and ensures all input is consumed.
-        """
-        result = self.expr()
-        if self.current_token.type!=EOF:
-            self.error()
-        return result
+    def generic_visit(self, node):
+        """Called if no visit_NodeType method exists."""
+        raise Exception(f'No visit_{type(node).__name__} method')
     
 
-def main():
-    while True:
-        try:
-            text = input('calc> ')
-        except EOFError:
-            break
-        if not text:
-            continue
-        interpreter = Interpreter(text)
-        result = interpreter.parse()
-        print(result)
+class Interpreter(NodeVisitor):
+    """
+    Interpreter that evaluates the AST. Walks the tree and computes the result.
+    """
+    def __init__(self, parser):
+        """ Initialize interpreter with a parser."""
+        self.parser = parser
 
-
-if __name__=='__main__':
-    main()
+    def visit_BinOp(self, node):
+        """ Visit binary operator node."""
+        if node.op.type==PLUS:
+            return self.visit(node.left) + self.visit(node.right)
+        elif node.op.type==MINUS:
+            return self.visit(node.left) - self.visit(node.right)
+        elif node.op.type==MUL:
+            return self.visit(node.left) * self.visit(node.right)
+        elif node.op.type==DIV:
+            return self.visit(node.left) // self.visit(node.right)
+        
+    def visit_Num(self, node):
+        """Visit number node."""
+        return node.value
+    
+    def interpret(self):
+        """Interpret the AST."""
+        tree = self.parser.parse()
+        return self.visit(tree)
