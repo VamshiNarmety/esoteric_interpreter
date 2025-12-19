@@ -111,3 +111,31 @@ def test_complex_with_parentheses():
 def test_multiple_parentheses():
     result = interpret('(2+3)*(4+5)')
     assert result == 45
+
+def test_unary_plus():
+    result = interpret('+5')
+    assert result == 5
+
+def test_unary_minus():
+    result = interpret('-3')
+    assert result == -3
+
+def test_unary_with_addition():
+    result = interpret('5 + -3')
+    assert result == 2
+
+def test_unary_with_subtraction():
+    result = interpret('5 - -3')
+    assert result == 8
+
+def test_unary_with_multiplication():
+    result = interpret('5 * -3')
+    assert result == -15
+
+def test_double_unary():
+    result = interpret('--3')
+    assert result == 3
+
+def test_complex_unary():
+    result = interpret('-5 + -3')
+    assert result == -8

@@ -4,7 +4,7 @@ Uses the visitor to pattern to traverse and interpret AST nodes.
 """
 from src.lexer.lexer import Lexer
 from src.parser.parser import Parser
-from src.parser.ast_nodes import BinOp, Num
+from src.parser.ast_nodes import BinOp, Num, UnaryOp
 from src.lexer.token import PLUS, MINUS, MUL, DIV
 
 class NodeVisitor:
@@ -44,6 +44,14 @@ class Interpreter(NodeVisitor):
     def visit_Num(self, node):
         """Visit number node."""
         return node.value
+    
+    def visit_UnaryOp(self, node):
+        """ Visit Unary operator node."""
+        op = node.op.type
+        if op==PLUS:
+            return +self.visit(node.expr)
+        elif op==MINUS:
+            return -self.visit(node.expr)
     
     def interpret(self):
         """Interpret the AST."""

@@ -3,7 +3,7 @@ Parser for building Abstract syntax trees.
 The parser consumes tokens from the lexer and builds an AST.
 """
 from src.lexer.token import INTEGER, PLUS, MINUS, MUL, DIV, LPAREN, RPAREN, EOF
-from src.parser.ast_nodes import BinOp, Num
+from src.parser.ast_nodes import BinOp, Num, UnaryOp
 
 class Parser:
     """
@@ -11,7 +11,7 @@ class Parser:
     Grammar:
        expr: term((PLUS|MINUS)term)*
        term: factor((MUL|DIV)factor)*
-       factor: INTEGER | LPAREN expr RPAREN
+       factor: (PLUS | MINUS) factor | INTEGER | LPAREN expr RPAREN
     """
     def __init__(self, lexer):
         self.lexer = lexer
@@ -31,10 +31,18 @@ class Parser:
 
     def factor(self):
         """
-        factor : INTEGER | LPAREN expr RPAREN
+        factor : (PLUS | MINUS) factor | INTEGER | LPAREN expr RPAREN
         """
         token = self.current_token
-        if token.type==INTEGER:
+        if token.type==PLUS:
+            self.eat(PLUS)
+            node = UnaryOp(token, self.factor())
+            return node
+        elif token.type==MINUS:
+            self.eat(MINUS)
+            node = UnaryOp(token, self.factor())
+            return node
+        elif token.type==INTEGER:
             self.eat(INTEGER)
             return Num(token)
         elif token.type==LPAREN:
