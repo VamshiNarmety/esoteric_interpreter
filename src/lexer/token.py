@@ -26,4 +26,15 @@ MUL = 'MUL'
 DIV = 'DIV'
 LPAREN = 'LPAREN'
 RPAREN = 'RPAREN'
+ID = 'ID'
+ASSIGN ='ASSIGN'
+BEGIN = 'BEGIN'
+END = 'END'
+SEMI = 'SEMI'
+DOT = 'DOT'
 EOF = 'EOF'
+
+RESERVED_KEYWORDS = {
+    'BEGIN': Token(BEGIN, 'BEGIN'),
+    'END': Token(END, 'END'),
+}

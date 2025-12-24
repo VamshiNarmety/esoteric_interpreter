@@ -2,9 +2,8 @@
 Interpreter that walks the Abstract syntax tree.
 Uses the visitor to pattern to traverse and interpret AST nodes.
 """
-from src.lexer.lexer import Lexer
 from src.parser.parser import Parser
-from src.parser.ast_nodes import BinOp, Num, UnaryOp
+from src.parser.ast_nodes import BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp
 from src.lexer.token import PLUS, MINUS, MUL, DIV
 
 class NodeVisitor:
@@ -26,6 +25,8 @@ class Interpreter(NodeVisitor):
     """
     Interpreter that evaluates the AST. Walks the tree and computes the result.
     """
+    GLOBAL_SCOPE = {}
+    
     def __init__(self, parser):
         """ Initialize interpreter with a parser."""
         self.parser = parser
@@ -52,8 +53,28 @@ class Interpreter(NodeVisitor):
             return +self.visit(node.expr)
         elif op==MINUS:
             return -self.visit(node.expr)
+        
+    def visit_Compound(self, node):
+        for child in node.children:
+            self.visit(child)
+
+    def visit_Assign(self, node):
+        var_name = node.left.value
+        self.GLOBAL_SCOPE[var_name]=self.visit(node.right)
+
+    def visit_Var(self, node):
+        var_name = node.value
+        val = self.GLOBAL_SCOPE.get(var_name)
+        if val is None:
+            raise NameError(f"variable '{var_name}' not found")
+        return val
+    
+    def visit_NoOp(self, node):
+        pass
     
     def interpret(self):
         """Interpret the AST."""
         tree = self.parser.parse()
+        if tree is None:
+            return ''
         return self.visit(tree)

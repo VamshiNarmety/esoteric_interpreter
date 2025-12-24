@@ -1,4 +1,4 @@
-from src.lexer.token import Token, INTEGER, PLUS, MINUS, MUL, DIV, LPAREN, RPAREN, EOF
+from src.lexer.token import (Token, INTEGER, PLUS, MINUS, MUL, DIV, LPAREN, RPAREN, ID, ASSIGN, BEGIN, END, SEMI, DOT, EOF, RESERVED_KEYWORDS)
 
 class Lexer:
     """
@@ -22,6 +22,14 @@ class Lexer:
         else:
             self.current_char = self.text[self.pos]
 
+    def peek(self):
+        """Look ahead one character without consuming it"""
+        peek_pos = self.pos+1
+        if self.pos>len(self.text)-1:
+            return None
+        else:
+            return self.text[peek_pos]
+
     def skip_whitespace(self):
         while self.current_char is not None and self.current_char.isspace():
             self.advance()
@@ -33,6 +41,15 @@ class Lexer:
             self.advance()
         return int(result)
     
+    def _id(self):
+        """Handles identifiers and reserved keywords"""
+        result = ''
+        while self.current_char is not None and self.current_char.isalnum():
+            result+=self.current_char
+            self.advance()
+        token = RESERVED_KEYWORDS.get(result.upper(), Token(ID, result))
+        return token
+    
     def get_next_token(self):
         """
         returns next token from the input
@@ -41,6 +58,14 @@ class Lexer:
             if self.current_char.isspace():
                 self.skip_whitespace()
                 continue
+
+            if self.current_char.isalpha():
+                return self._id()
+            
+            if self.current_char==':' and self.peek()=='=':
+                self.advance()
+                self.advance()
+                return Token(ASSIGN, ':=')
             
             if self.current_char.isdigit():
                 return Token(INTEGER, self.integer())
@@ -68,6 +93,14 @@ class Lexer:
             if self.current_char == ')':
                 self.advance()
                 return Token(RPAREN, ')')
+            
+            if self.current_char==';':
+                self.advance()
+                return Token(SEMI, ';')
+            
+            if self.current_char=='.':
+                self.advance()
+                return Token(DOT, '.')
             
             self.error()
         
