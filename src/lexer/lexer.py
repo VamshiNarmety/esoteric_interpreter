@@ -1,4 +1,4 @@
-from src.lexer.token import (Token, INTEGER, PLUS, MINUS, MUL, DIV, LPAREN, RPAREN, ID, ASSIGN, BEGIN, END, SEMI, DOT, EOF, RESERVED_KEYWORDS)
+from src.lexer.token import (Token, INTEGER_CONST, REAL_CONST, PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV, LPAREN, RPAREN, ID, ASSIGN, BEGIN, END, SEMI, DOT, PROGRAM, VAR, COLON, COMMA, EOF, RESERVED_KEYWORDS)
 
 class Lexer:
     """
@@ -34,12 +34,22 @@ class Lexer:
         while self.current_char is not None and self.current_char.isspace():
             self.advance()
 
-    def integer(self):
+    def number(self):
         result = ""
         while self.current_char is not None and self.current_char.isdigit():
             result+=self.current_char
             self.advance()
-        return int(result)
+        if self.current_char=='.':
+            result+=self.current_char
+            self.advance()
+            while self.current_char is not None and self.current_char.isdigit():
+                result+=self.current_char
+                self.advance()
+            token = Token(REAL_CONST, float(result))
+        else:
+            token = Token(INTEGER_CONST, int(result))
+
+        return token
     
     def _id(self):
         """Handles identifiers and reserved keywords"""
@@ -67,8 +77,12 @@ class Lexer:
                 self.advance()
                 return Token(ASSIGN, ':=')
             
+            if self.current_char==':':
+                self.advance()
+                return Token(COLON, ':')
+            
             if self.current_char.isdigit():
-                return Token(INTEGER, self.integer())
+                return self.number()
             
             if self.current_char == '+':
                 self.advance()
@@ -82,9 +96,14 @@ class Lexer:
                 self.advance()
                 return Token(MUL, '*')
             
+            if self.current_char=='/' and self.peek()=='/':
+                self.advance()
+                self.advance()
+                return Token(INTEGER_DIV, '//')
+            
             if self.current_char == '/':
                 self.advance()
-                return Token(DIV, '/')
+                return Token(FLOAT_DIV, '/')
             
             if self.current_char == '(':
                 self.advance()
@@ -101,6 +120,10 @@ class Lexer:
             if self.current_char=='.':
                 self.advance()
                 return Token(DOT, '.')
+            
+            if self.current_char==',':
+                self.advance()
+                return Token(COMMA, ',')
             
             self.error()
         

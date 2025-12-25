@@ -3,8 +3,8 @@ Interpreter that walks the Abstract syntax tree.
 Uses the visitor to pattern to traverse and interpret AST nodes.
 """
 from src.parser.parser import Parser
-from src.parser.ast_nodes import BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp
-from src.lexer.token import PLUS, MINUS, MUL, DIV
+from src.parser.ast_nodes import Program, Block, VarDecl, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp
+from src.lexer.token import PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV
 
 class NodeVisitor:
     """
@@ -31,6 +31,20 @@ class Interpreter(NodeVisitor):
         """ Initialize interpreter with a parser."""
         self.parser = parser
 
+    def visit_Program(self, node):
+        self.visit(node.block)
+
+    def visit_Block(self, node):
+        for declaration in node.declarations:
+            self.visit(declaration)
+        self.visit(node.compound_statement)
+
+    def visit_VarDecl(self, node):
+        pass
+
+    def visit_Type(self, node):
+        pass
+
     def visit_BinOp(self, node):
         """ Visit binary operator node."""
         if node.op.type==PLUS:
@@ -39,8 +53,10 @@ class Interpreter(NodeVisitor):
             return self.visit(node.left) - self.visit(node.right)
         elif node.op.type==MUL:
             return self.visit(node.left) * self.visit(node.right)
-        elif node.op.type==DIV:
+        elif node.op.type==INTEGER_DIV:
             return self.visit(node.left) // self.visit(node.right)
+        elif node.op.type==FLOAT_DIV:
+            return self.visit(node.left)/self.visit(node.right)
         
     def visit_Num(self, node):
         """Visit number node."""
