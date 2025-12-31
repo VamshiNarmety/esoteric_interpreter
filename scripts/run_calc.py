@@ -25,6 +25,11 @@ def main():
             while not text.rstrip().endswith('.'):
                 line = input('>> ')
                 text += '\n' + line
+            
+            # Wrap in PROGRAM structure if not already present
+            if not text.strip().upper().startswith('PROGRAM'):
+                text = f"PROGRAM repl;\n{text}"
+            
             lexer = Lexer(text)
             parser = Parser(lexer)
             interpreter = Interpreter(parser)

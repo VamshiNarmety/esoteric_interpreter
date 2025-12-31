@@ -5,6 +5,7 @@ Uses the visitor to pattern to traverse and interpret AST nodes.
 from src.parser.parser import Parser
 from src.parser.ast_nodes import Program, Block, VarDecl, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp
 from src.lexer.token import PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV
+from src.semantic.semantic_analyzer import SemanticAnalyzer
 
 class NodeVisitor:
     """
@@ -93,4 +94,7 @@ class Interpreter(NodeVisitor):
         tree = self.parser.parse()
         if tree is None:
             return ''
+        #Semantic analysis
+        semantic_analyzer = SemanticAnalyzer()
+        semantic_analyzer.visit(tree)
         return self.visit(tree)
