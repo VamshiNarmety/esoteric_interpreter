@@ -15,6 +15,7 @@ def test_simple_assignment():
     Interpreter.GLOBAL_SCOPE.clear()
     interpret('''
         PROGRAM Test;
+        VAR a : INTEGER;
         BEGIN
             a := 5
         END.
@@ -25,6 +26,7 @@ def test_multiple_assignments():
     Interpreter.GLOBAL_SCOPE.clear()
     interpret('''
         PROGRAM Test;
+        VAR x, y, z : INTEGER;
         BEGIN
             x := 2;
             y := 3;
@@ -39,6 +41,7 @@ def test_complex_expression_with_variables():
     Interpreter.GLOBAL_SCOPE.clear()
     interpret('''
         PROGRAM Test;
+        VAR a, b : INTEGER;
         BEGIN
             a := 2;
             b := 10 * a + 10 * a
@@ -51,6 +54,7 @@ def test_nested_begin_end():
     Interpreter.GLOBAL_SCOPE.clear()
     interpret('''
         PROGRAM Test;
+        VAR number, a, b : INTEGER;
         BEGIN
             BEGIN
                 number := 2
@@ -67,6 +71,7 @@ def test_variable_reassignment():
     Interpreter.GLOBAL_SCOPE.clear()
     interpret('''
         PROGRAM Test;
+        VAR x : INTEGER;
         BEGIN
             x := 5;
             x := x + 3;
@@ -79,6 +84,7 @@ def test_multiple_variables_in_expression():
     Interpreter.GLOBAL_SCOPE.clear()
     interpret('''
         PROGRAM Test;
+        VAR a, b, c, result : INTEGER;
         BEGIN
             a := 3;
             b := 4;
@@ -92,6 +98,7 @@ def test_variables_with_unary_operators():
     Interpreter.GLOBAL_SCOPE.clear()
     interpret('''
         PROGRAM Test;
+        VAR x, result : INTEGER;
         BEGIN
             x := 10;
             result := -x + 5

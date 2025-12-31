@@ -52,10 +52,12 @@ def test_undeclared_variable_error():
             x := 5
         END.
     '''
-    # Should auto-declare x as INTEGER
-    symtab = analyze(text)
-    assert symtab.lookup('x') is not None
-    assert symtab.lookup('x').type.name == 'INTEGER'
+    lexer = Lexer(text)
+    parser = Parser(lexer)
+    tree = parser.parse()
+    semantic_analyzer = SemanticAnalyzer()
+    with pytest.raises(Exception, match="Variable 'x' not declared"):
+        semantic_analyzer.visit(tree)
 
 def test_variable_reference_after_declaration():
     text = '''
@@ -81,10 +83,12 @@ def test_undeclared_variable_in_expression():
             x := y + 5
         END.
     '''
-    # Should auto-declare y as INTEGER
-    symtab = analyze(text)
-    assert symtab.lookup('y') is not None
-    assert symtab.lookup('y').type.name == 'INTEGER'
+    lexer = Lexer(text)
+    parser = Parser(lexer)
+    tree = parser.parse()
+    semantic_analyzer = SemanticAnalyzer()
+    with pytest.raises(Exception, match="Variable 'y' not declared"):
+        semantic_analyzer.visit(tree)
 
 def test_multiple_var_sections():
     text = '''
@@ -103,3 +107,19 @@ def test_multiple_var_sections():
     assert symtab.lookup('c').type.name == 'INTEGER'
     assert symtab.lookup('x').type.name == 'REAL'
     assert symtab.lookup('y').type.name == 'REAL'
+
+def test_duplicate_variable_declaration():
+    text = '''
+        PROGRAM Test;
+        VAR
+            x : INTEGER;
+            x : REAL;
+        BEGIN
+        END.
+    '''
+    lexer = Lexer(text)
+    parser = Parser(lexer)
+    tree = parser.parse()
+    semantic_analyzer = SemanticAnalyzer()
+    with pytest.raises(Exception, match="Duplicate identifier 'x'"):
+        semantic_analyzer.visit(tree)

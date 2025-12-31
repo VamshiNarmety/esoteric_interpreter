@@ -16,7 +16,7 @@ def test_program_with_var_declarations():
     interpret('''
         PROGRAM Part10;
         VAR
-            a, b : INTEGER;
+            a, b, result : INTEGER;
             c : REAL;
         BEGIN
             a := 5;
@@ -33,6 +33,7 @@ def test_program_with_var_declarations():
 def test_integer_division():
     result = interpret('''
         PROGRAM Test;
+        VAR result : INTEGER;
         BEGIN
             result := 7 DIV 2
         END.
@@ -42,6 +43,7 @@ def test_integer_division():
 def test_float_division_with_slash():
     result = interpret('''
         PROGRAM Test;
+        VAR result : REAL;
         BEGIN
             result := 7 / 2
         END.
@@ -51,6 +53,7 @@ def test_float_division_with_slash():
 def test_real_number_addition():
     result = interpret('''
         PROGRAM Test;
+        VAR result : REAL;
         BEGIN
             result := 3.14 + 2.86
         END.
@@ -60,6 +63,7 @@ def test_real_number_addition():
 def test_real_number_multiplication():
     result = interpret('''
         PROGRAM Test;
+        VAR result : REAL;
         BEGIN
             result := 2.5 * 4.0
         END.
@@ -69,6 +73,7 @@ def test_real_number_multiplication():
 def test_mixed_integer_real_operations():
     result = interpret('''
         PROGRAM Test;
+        VAR result : REAL;
         BEGIN
             result := 5 + 2.5
         END.
@@ -81,7 +86,7 @@ def test_multiple_var_declarations():
         PROGRAM Test;
         VAR
             x, y, z : INTEGER;
-            a, b : REAL;
+            a, b, result : REAL;
         BEGIN
             x := 1;
             y := 2;
@@ -141,6 +146,7 @@ def test_complex_program():
 def test_case_insensitive_program_keyword():
     result = interpret('''
         program Test;
+        var result : integer;
         begin
             result := 42
         end.
@@ -165,6 +171,7 @@ def test_case_insensitive_var_declarations():
 def test_program_without_var_section():
     result = interpret('''
         PROGRAM SimpleTest;
+        VAR result : INTEGER;
         BEGIN
             result := 100
         END.
@@ -189,7 +196,7 @@ def test_real_with_integer_div():
     result = interpret('''
         PROGRAM Test;
         VAR
-            x : REAL;
+            x, result : REAL;
         BEGIN
             x := 10.0 DIV 3.0;
             result := x
@@ -201,7 +208,7 @@ def test_multiple_real_operations():
     result = interpret('''
         PROGRAM Test;
         VAR
-            a, b, c : REAL;
+            a, b, c, result : REAL;
         BEGIN
             a := 1.5;
             b := 2.5;

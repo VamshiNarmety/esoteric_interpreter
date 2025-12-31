@@ -3,7 +3,7 @@ Semantic analyzer for the Pascal interpreter.
 Builds symbol table and performs semantic checks.
 """
 from src.parser.ast_nodes import (Program, Block, VarDecl, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp)
-from src.semantic.symbols import SymbolTable, VarSymbol
+from src.semantic.symbols import SymbolTable, VarSymbol, BuiltinTypeSymbol
 
 class NodeVisitor:
     """Base visitor class"""
@@ -34,8 +34,13 @@ class SemanticAnalyzer(NodeVisitor):
         """Visit variable declaration node."""
         type_name = node.type_node.value
         type_symbol = self.symtab.lookup(type_name)
-        #Define variable symbol with its type
+        
+        # Check for duplicate declarations
         var_name = node.var_node.value
+        if self.symtab.lookup(var_name) is not None:
+            raise Exception(f"Error: Duplicate identifier '{var_name}'")
+        
+        # Define variable symbol with its type
         var_symbol = VarSymbol(var_name, type_symbol)
         self.symtab.define(var_symbol)
 
@@ -44,14 +49,11 @@ class SemanticAnalyzer(NodeVisitor):
             self.visit(child)
 
     def visit_Assign(self, node):
-        # Check that variable is declared (or auto-declare it)
+        # Check that variable is declared
         var_name = node.left.value
         var_symbol = self.symtab.lookup(var_name)
         if var_symbol is None:
-            # Auto-declare as INTEGER for backward compatibility
-            integer_type = self.symtab.lookup('INTEGER')
-            var_symbol = VarSymbol(var_name, integer_type)
-            self.symtab.define(var_symbol)
+            raise Exception(f"Variable '{var_name}' not declared")
         
         self.visit(node.right)
 
@@ -60,10 +62,7 @@ class SemanticAnalyzer(NodeVisitor):
         var_name = node.value
         var_symbol = self.symtab.lookup(var_name)
         if var_symbol is None:
-            # Auto-declare as INTEGER for backward compatibility
-            integer_type = self.symtab.lookup('INTEGER')
-            var_symbol = VarSymbol(var_name, integer_type)
-            self.symtab.define(var_symbol)
+            raise Exception(f"Variable '{var_name}' not declared")
         
     def visit_BinOp(self, node):
         self.visit(node.left)
