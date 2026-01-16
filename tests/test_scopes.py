@@ -1,6 +1,5 @@
 """
 Tests for scoped symbol tables and nested scopes.
-Covers both Part 13 (basic scopes) and Part 14 (nested scopes).
 """
 import pytest
 from src.lexer.lexer import Lexer
@@ -15,8 +14,6 @@ def analyze(text):
     semantic_analyzer = SemanticAnalyzer()
     semantic_analyzer.visit(tree)
     return semantic_analyzer
-
-# ========== Part 13: Basic Scope Tests ==========
 
 def test_global_scope_creation():
     """Test that global scope is created with level 1."""
@@ -120,8 +117,6 @@ def test_multiple_variables_in_global_scope():
     END.
     """
     analyze(text)  # Should not raise
-
-# ========== Part 14: Nested Scope Tests ==========
 
 def test_nested_begin_end_scope():
     """Test that nested BEGIN...END creates a new scope."""
