@@ -2,8 +2,12 @@
 Semantic analyzer for the Pascal interpreter.
 Builds symbol table and performs semantic checks.
 """
+import os
 from src.parser.ast_nodes import (Program, Block, VarDecl, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp)
-from src.semantic.symbols import SymbolTable, VarSymbol, BuiltinTypeSymbol
+from src.semantic.symbols import SymbolTable, VarSymbol, BuiltinTypeSymbol, ScopedSymbolTable
+
+# Control debug output via environment variable
+_DEBUG = os.environ.get('PASCAL_DEBUG', '0') == '1'
 
 class NodeVisitor:
     """Base visitor class"""
@@ -18,12 +22,29 @@ class NodeVisitor:
 class SemanticAnalyzer(NodeVisitor):
     """
     Semantic analyzer that builds symbol table and checks semantics.
+    supports nested scopes for BEGIN...END blocks.
     """
     def __init__(self):
-        self.symtab = SymbolTable()
+        self.current_scope=None
+        self.scope_counter = 0
+        self.global_scope = None  # Store reference for tests
 
     def visit_Program(self, node):
+        if _DEBUG:
+            print('ENTER scope: global')
+        global_scope = ScopedSymbolTable(
+            scope_name='global',
+            scope_level=1,
+            enclosing_scope=self.current_scope #None for global
+        )
+        global_scope._init_builtins()
+        self.current_scope = global_scope
+        self.global_scope = global_scope  # Store for later access
         self.visit(node.block)
+        if _DEBUG:
+            print(global_scope)
+            print('LEAVE scope: global')
+        self.current_scope = self.current_scope.enclosing_scope
 
     def visit_Block(self, node):
         for declaration in node.declarations:
@@ -33,25 +54,53 @@ class SemanticAnalyzer(NodeVisitor):
     def visit_VarDecl(self, node):
         """Visit variable declaration node."""
         type_name = node.type_node.value
-        type_symbol = self.symtab.lookup(type_name)
+        type_symbol = self.current_scope.lookup(type_name)
         
-        # Check for duplicate declarations
+        # Check for duplicate declarations in current scope only
         var_name = node.var_node.value
-        if self.symtab.lookup(var_name) is not None:
+        if self.current_scope.lookup(var_name, current_scope_only=True) is not None:
             raise Exception(f"Error: Duplicate identifier '{var_name}'")
         
         # Define variable symbol with its type
         var_symbol = VarSymbol(var_name, type_symbol)
-        self.symtab.define(var_symbol)
+        self.current_scope.define(var_symbol)
 
     def visit_Compound(self, node):
-        for child in node.children:
-            self.visit(child)
+        """
+        Visit compound statement (BEGIN...END block).
+        Each compound creates a new nested scope.
+        """
+        # Only create nested scope if we're not at the program level
+        # (program-level compound doesn't create new scope)
+        if self.current_scope.scope_level>1 or self._is_nested_compound(node):
+            self.scope_counter+=1
+            scope_name = f'block{self.scope_counter}'
+            if _DEBUG:
+                print(f'ENTER scope: {scope_name}')
+            nested_scope = ScopedSymbolTable(
+                scope_name=scope_name, scope_level=self.current_scope.scope_level+1, enclosing_scope=self.current_scope
+            )
+            self.current_scope=nested_scope
+            #visit children
+            for child in node.children:
+                self.visit(child)
+
+            if _DEBUG:
+                print(nested_scope)
+                print(f'LEAVE scope: {scope_name}')
+            self.current_scope = self.current_scope.enclosing_scope
+        else:
+            for child in node.children:
+                self.visit(child)
+
+    def _is_nested_compound(self, node):
+        """Check if this compound statement is nested inside another compound."""
+        return self.scope_counter>0 or self.current_scope.scope_level>1
 
     def visit_Assign(self, node):
         # Check that variable is declared
         var_name = node.left.value
-        var_symbol = self.symtab.lookup(var_name)
+        var_symbol = self.current_scope.lookup(var_name)
         if var_symbol is None:
             raise Exception(f"Variable '{var_name}' not declared")
         
@@ -60,7 +109,7 @@ class SemanticAnalyzer(NodeVisitor):
     def visit_Var(self, node):
         """Visit variable reference node"""
         var_name = node.value
-        var_symbol = self.symtab.lookup(var_name)
+        var_symbol = self.current_scope.lookup(var_name)
         if var_symbol is None:
             raise Exception(f"Variable '{var_name}' not declared")
         
@@ -76,3 +125,7 @@ class SemanticAnalyzer(NodeVisitor):
 
     def visit_NoOp(self, node):
         pass
+
+    def visit_Type(self, node):
+        pass
+

@@ -10,19 +10,21 @@ def analyze(text):
     tree = parser.parse()
     semantic_analyzer = SemanticAnalyzer()
     semantic_analyzer.visit(tree)
-    return semantic_analyzer.symtab
+    return semantic_analyzer.global_scope
 
 def test_symbol_table_builtin_types():
+    """Test that built-in types are available in global scope."""
     text = '''
         PROGRAM Test;
         BEGIN
         END.
     '''
-    symtab = analyze(text)
-    assert symtab.lookup('INTEGER') is not None
-    assert symtab.lookup('REAL') is not None
+    global_scope = analyze(text)
+    assert global_scope.lookup('INTEGER') is not None
+    assert global_scope.lookup('REAL') is not None
 
 def test_symbol_table_var_declarations():
+    """Test that variable declarations are stored in global scope."""
     text = '''
         PROGRAM Test;
         VAR
@@ -31,17 +33,17 @@ def test_symbol_table_var_declarations():
         BEGIN
         END.
     '''
-    symtab = analyze(text)
+    global_scope = analyze(text)
     
-    x_symbol = symtab.lookup('x')
+    x_symbol = global_scope.lookup('x')
     assert x_symbol is not None
     assert x_symbol.type.name == 'INTEGER'
     
-    y_symbol = symtab.lookup('y')
+    y_symbol = global_scope.lookup('y')
     assert y_symbol is not None
     assert y_symbol.type.name == 'INTEGER'
     
-    z_symbol = symtab.lookup('z')
+    z_symbol = global_scope.lookup('z')
     assert z_symbol is not None
     assert z_symbol.type.name == 'REAL'
 
@@ -60,6 +62,7 @@ def test_undeclared_variable_error():
         semantic_analyzer.visit(tree)
 
 def test_variable_reference_after_declaration():
+    """Test that variables can be referenced after declaration."""
     text = '''
         PROGRAM Test;
         VAR
@@ -70,9 +73,9 @@ def test_variable_reference_after_declaration():
         END.
     '''
     # Should not raise any errors
-    symtab = analyze(text)
-    assert symtab.lookup('x') is not None
-    assert symtab.lookup('y') is not None
+    global_scope = analyze(text)
+    assert global_scope.lookup('x') is not None
+    assert global_scope.lookup('y') is not None
 
 def test_undeclared_variable_in_expression():
     text = '''
@@ -91,6 +94,7 @@ def test_undeclared_variable_in_expression():
         semantic_analyzer.visit(tree)
 
 def test_multiple_var_sections():
+    """Test multiple variable declarations with different types."""
     text = '''
         PROGRAM Test;
         VAR
@@ -101,12 +105,12 @@ def test_multiple_var_sections():
             x := 2.5
         END.
     '''
-    symtab = analyze(text)
-    assert symtab.lookup('a').type.name == 'INTEGER'
-    assert symtab.lookup('b').type.name == 'INTEGER'
-    assert symtab.lookup('c').type.name == 'INTEGER'
-    assert symtab.lookup('x').type.name == 'REAL'
-    assert symtab.lookup('y').type.name == 'REAL'
+    global_scope = analyze(text)
+    assert global_scope.lookup('a').type.name == 'INTEGER'
+    assert global_scope.lookup('b').type.name == 'INTEGER'
+    assert global_scope.lookup('c').type.name == 'INTEGER'
+    assert global_scope.lookup('x').type.name == 'REAL'
+    assert global_scope.lookup('y').type.name == 'REAL'
 
 def test_duplicate_variable_declaration():
     text = '''

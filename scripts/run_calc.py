@@ -7,8 +7,9 @@ from src.parser.parser import Parser
 from src.interpreter.interpreter import Interpreter
 
 def main():
-    print("Pascal Interpreter REPL")
-    print("\nVariables are stored in GLOBAL_SCOPE. Type 'show' to see all variables.\n")
+    print("Pascal Interpreter REPL (with Scoped Symbol Tables)")
+    print("\nVariables are stored in GLOBAL_SCOPE. Type 'show' to see all variables.")
+    print("Type 'clear' to reset variables. End statements with '.' to execute.\n")
 
     while True:
         try:
@@ -33,8 +34,10 @@ def main():
             lexer = Lexer(text)
             parser = Parser(lexer)
             interpreter = Interpreter(parser)
-            interpreter.interpret()
-            print("Program executed successfully")
+            result = interpreter.interpret()
+            print("✓ Program executed successfully")
+            if text.strip().upper().startswith('PROGRAM'):
+                print("GLOBAL_SCOPE:", Interpreter.GLOBAL_SCOPE)
         except EOFError:
             print("\nExit")
             break
