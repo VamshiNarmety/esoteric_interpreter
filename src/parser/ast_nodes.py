@@ -25,6 +25,27 @@ class VarDecl(AST):
         self.var_node = var_node
         self.type_node = type_node
 
+class FunctionDecl(AST):
+    """Function declaration node"""
+    def __init__(self, func_name, params, return_type, block_node):
+        self.func_name = func_name
+        self.params = params #List of param nodes
+        self.return_type = return_type
+        self.block_node = block_node
+
+class Param(AST):
+    """Function parameter node"""
+    def __init__(self, var_node, type_node):
+        self.var_node = var_node
+        self.type_node = type_node
+
+class FunctionCall(AST):
+    """Function call node(can be used in expressions)"""
+    def __init__(self, func_name, actual_params, token):
+        self.func_name = func_name
+        self.actual_params = actual_params
+        self.token = token
+
 class Type(AST):
     def __init__(self, token):
         self.token = token

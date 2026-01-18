@@ -34,6 +34,12 @@ class Lexer:
         while self.current_char is not None and self.current_char.isspace():
             self.advance()
 
+    def skip_comment(self):
+        """Skip comments enclosed in {}."""
+        while self.current_char!='}':
+            self.advance()
+        self.advance()
+
     def number(self):
         result = ""
         while self.current_char is not None and self.current_char.isdigit():
@@ -54,7 +60,7 @@ class Lexer:
     def _id(self):
         """Handles identifiers and reserved keywords"""
         result = ''
-        while self.current_char is not None and self.current_char.isalnum():
+        while self.current_char is not None and (self.current_char.isalnum() or self.current_char=='_'):
             result+=self.current_char
             self.advance()
         token = RESERVED_KEYWORDS.get(result.upper(), Token(ID, result))
@@ -69,7 +75,7 @@ class Lexer:
                 self.skip_whitespace()
                 continue
 
-            if self.current_char.isalpha():
+            if self.current_char.isalpha() or self.current_char=='_':
                 return self._id()
             
             if self.current_char==':' and self.peek()=='=':

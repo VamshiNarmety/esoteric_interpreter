@@ -2,15 +2,18 @@
 Parser for building Abstract syntax trees.
 The parser consumes tokens from the lexer and builds an AST.
 """
-from src.lexer.token import (INTEGER_CONST, REAL_CONST, PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV, LPAREN, RPAREN, ID, ASSIGN, BEGIN, END, SEMI, DOT, PROGRAM, VAR, COLON, COMMA, INTEGER, REAL, EOF)
-from src.parser.ast_nodes import (Program, Block, VarDecl, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp)
+from src.lexer.token import (INTEGER_CONST, REAL_CONST, PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV, LPAREN, RPAREN, ID, ASSIGN, BEGIN, END, SEMI, DOT, PROGRAM, VAR, COLON, COMMA, INTEGER, REAL, FUNCTION, EOF)
+from src.parser.ast_nodes import (Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp)
 
 class Parser:
     """
     program : PROGRAM variable SEMI block DOT
     block : declarations compound_statement
-    declarations : VAR (variable_declaration SEMI)+
+    declarations : (VAR (variable_declaration SEMI)+)? (FUNCTION ID (LPAREN formal_parameter_list RPAREN)? COLON type_spec SEMI block SEMI)*
                  | empty
+    formal_parameter_list : formal_parameters
+                          | formal_parameters SEMI formal_parameter_list
+    formal_parameters : ID (COMMA ID)* COLON type_spec
     variable_declaration : ID (COMMA ID)* COLON type_spec
     type_spec : INTEGER | REAL
     compound_statement : BEGIN statement_list END
@@ -28,6 +31,7 @@ class Parser:
            | INTEGER_CONST
            | REAL_CONST
            | LPAREN expr RPAREN
+           | function_call
            | variable
     empty :
     """
@@ -65,13 +69,54 @@ class Parser:
     
     def declarations(self):
         declarations = []
+        #Variable declaraions
         if self.current_token.type==VAR:
             self.eat(VAR)
             while self.current_token.type==ID:
                 var_decl = self.variable_declaration()
                 declarations.extend(var_decl)
                 self.eat(SEMI)
+        #Function declarations
+        while self.current_token.type==FUNCTION:
+            self.eat(FUNCTION)
+            func_name = self.current_token.value
+            self.eat(ID)
+            params = []
+            if self.current_token.type==LPAREN:
+                self.eat(LPAREN)
+                params = self.formal_parameter_list()
+                self.eat(RPAREN)
+            self.eat(COLON)
+            return_type = self.type_spec()
+            self.eat(SEMI)
+            block_node = self.block()
+            func_decl = FunctionDecl(func_name, params, return_type, block_node)
+            declarations.append(func_decl)
+            self.eat(SEMI)
         return declarations
+    
+    def formal_parameter_list(self):
+        if self.current_token.type!=ID:
+            return []
+        params = self.formal_parameters()
+        while self.current_token.type==SEMI:
+            self.eat(SEMI)
+            params.extend(self.formal_parameters())
+        return params
+    
+    def formal_parameters(self):
+        param_nodes = []
+        param_tokens = [self.current_token]
+        self.eat(ID)
+        while self.current_token.type==COMMA:
+            self.eat(COMMA)
+            param_tokens.append(self.current_token)
+            self.eat(ID)
+        self.eat(COLON)
+        type_node = self.type_spec()
+        for param_token in param_tokens:
+            param_nodes.append(Param(Var(param_token), type_node))
+        return param_nodes
     
     def variable_declaration(self):
         var_nodes = [Var(self.current_token)]
@@ -140,7 +185,7 @@ class Parser:
 
     def factor(self):
         """
-        factor : (PLUS factor | MINUS factor | INTEGER_CONST | REAL_CONST | LPAREN expr RPAREN | variable
+        factor : PLUS factor | MINUS factor | INTEGER_CONST | REAL_CONST | LPAREN expr RPAREN | function_call | variable
         """
         token = self.current_token
         if token.type==PLUS:
@@ -162,9 +207,27 @@ class Parser:
             node = self.expr()
             self.eat(RPAREN)
             return node
+        elif token.type==ID:
+            if self.lexer.current_char=='(':
+                return self.function_call()
+            else:
+                return self.variable()
         else:
-            node = self.variable()
-            return node
+            self.error()
+
+    def function_call(self):
+        token = self.current_token
+        func_name = self.current_token.value
+        self.eat(ID)
+        self.eat(LPAREN)
+        actual_params = []
+        if self.current_token.type!=RPAREN:
+            actual_params.append(self.expr())
+            while self.current_token.type==COMMA:
+                self.eat(COMMA)
+                actual_params.append(self.expr())
+        self.eat(RPAREN)
+        return FunctionCall(func_name, actual_params, token)
         
     def term(self):
         """

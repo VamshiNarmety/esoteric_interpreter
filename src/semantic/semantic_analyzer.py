@@ -3,8 +3,8 @@ Semantic analyzer for the Pascal interpreter.
 Builds symbol table and performs semantic checks.
 """
 import os
-from src.parser.ast_nodes import (Program, Block, VarDecl, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp)
-from src.semantic.symbols import SymbolTable, VarSymbol, BuiltinTypeSymbol, ScopedSymbolTable
+from src.parser.ast_nodes import (Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp)
+from src.semantic.symbols import SymbolTable, VarSymbol, BuiltinTypeSymbol, FunctionSymbol, ScopedSymbolTable
 
 # Control debug output via environment variable
 _DEBUG = os.environ.get('PASCAL_DEBUG', '0') == '1'
@@ -22,7 +22,7 @@ class NodeVisitor:
 class SemanticAnalyzer(NodeVisitor):
     """
     Semantic analyzer that builds symbol table and checks semantics.
-    supports nested scopes for BEGIN...END blocks.
+    supports nested scopes for BEGIN...END blocks and functions.
     """
     def __init__(self):
         self.current_scope=None
@@ -64,6 +64,73 @@ class SemanticAnalyzer(NodeVisitor):
         # Define variable symbol with its type
         var_symbol = VarSymbol(var_name, type_symbol)
         self.current_scope.define(var_symbol)
+
+    def visit_FunctionDecl(self, node):
+        """Visit function declaration node."""
+        func_name = node.func_name
+        #check for duplicate function declaration
+        if self.current_scope.lookup(func_name, current_scope_only=True) is not None:
+            raise Exception(f"Duplicate identifier '{func_name}'")
+        # Get return type
+        return_type_symbol = self.current_scope.lookup(node.return_type.value)
+        
+        # Create function symbol with parameters
+        func_symbol = FunctionSymbol(func_name, return_type=return_type_symbol)
+        self.current_scope.define(func_symbol)
+        
+        # Create new scope for function
+        if _DEBUG:
+            print(f'ENTER scope: {func_name}')
+        function_scope = ScopedSymbolTable(
+            scope_name=func_name,
+            scope_level=self.current_scope.scope_level + 1,
+            enclosing_scope=self.current_scope
+        )
+        self.current_scope = function_scope
+        
+        # Define function name as variable in its own scope (for return value assignment)
+        func_return_var = VarSymbol(func_name, return_type_symbol)
+        self.current_scope.define(func_return_var)
+        
+        # Define parameters in function scope
+        for param in node.params:
+            param_type = self.current_scope.lookup(param.type_node.value)
+            param_name = param.var_node.value
+            
+            # Check for duplicate parameters
+            if self.current_scope.lookup(param_name, current_scope_only=True) is not None:
+                raise Exception(f"Error: Duplicate parameter '{param_name}'")
+            
+            var_symbol = VarSymbol(param_name, param_type)
+            self.current_scope.define(var_symbol)
+            func_symbol.params.append(var_symbol)
+        
+        # Visit function body
+        self.visit(node.block_node)
+        
+        if _DEBUG:
+            print(function_scope)
+            print(f'LEAVE scope: {func_name}')
+        self.current_scope = self.current_scope.enclosing_scope
+
+    def visit_FunctionCall(self, node):
+        """Visit function call node."""
+        func_name = node.func_name
+        func_symbol = self.current_scope.lookup(func_name)
+        
+        if func_symbol is None:
+            raise Exception(f"Function '{func_name}' not declared")
+        
+        if not isinstance(func_symbol, FunctionSymbol):
+            raise Exception(f"'{func_name}' is not a function")
+        
+        # Check parameter count
+        if len(node.actual_params) != len(func_symbol.params):
+            raise Exception(f"Function '{func_name}' expects {len(func_symbol.params)} arguments, got {len(node.actual_params)}")
+        
+        # Visit actual parameters (expressions)
+        for param_expr in node.actual_params:
+            self.visit(param_expr)
 
     def visit_Compound(self, node):
         """
@@ -128,4 +195,8 @@ class SemanticAnalyzer(NodeVisitor):
 
     def visit_Type(self, node):
         pass
+
+    def visit_Param(self, node):
+        pass
+
 

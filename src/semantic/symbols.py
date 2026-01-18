@@ -35,6 +35,20 @@ class VarSymbol(Symbol):
     def __repr__(self):
         return f"<{self.__class__.__name__}(name='{self.name}', type='{self.type}')>"
     
+class FunctionSymbol(Symbol):
+    """Represents a function symbol."""
+    def __init__(self, name, params=None, return_type=None):
+        super().__init__(name, return_type)
+        self.params = params if params is not None else []
+        self.return_type = return_type
+
+    def __str__(self):
+        params_str = ', '.join(str(p) for p in self.params)
+        return f"<{self.name}({params_str}):{self.return_type}>"
+    
+    def __repr__(self):
+        return f"<{self.__class__.__name__}(name='{self.name}', params={self.params}, return_type={self.return_type})>"
+    
 class ScopedSymbolTable:
     """
     scoped symbol table with support for nested scopes.
