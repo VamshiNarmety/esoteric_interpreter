@@ -1,11 +1,13 @@
 """
 Interpreter that walks the Abstract syntax tree.
 Uses the visitor to pattern to traverse and interpret AST nodes.
+Implements call stack and activation records for proper function execution.
 """
 from src.parser.parser import Parser
 from src.parser.ast_nodes import Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp
 from src.lexer.token import PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV
 from src.semantic.semantic_analyzer import SemanticAnalyzer
+from src.interpreter.activation_record import ActivationRecord
 
 class NodeVisitor:
     """
@@ -25,6 +27,7 @@ class NodeVisitor:
 class Interpreter(NodeVisitor):
     """
     Interpreter that evaluates the AST. Walks the tree and computes the result.
+    Uses call stack with activation records for proper function execution.
     """
     GLOBAL_SCOPE = {}
     
@@ -32,6 +35,19 @@ class Interpreter(NodeVisitor):
         """ Initialize interpreter with a parser."""
         self.parser = parser
         self.functions = {} #store function AST nodes
+        self.call_stack = [] #stack of activation records
+        self.global_ar = ActivationRecord('GLOBAL', 0)
+
+    def push_ar(self, ar):
+        self.call_stack.append(ar)
+
+    def pop_ar(self):
+        return self.call_stack.pop()
+    
+    def current_ar(self):
+        if self.call_stack:
+            return self.call_stack[-1]
+        return self.global_ar
 
     def visit_Program(self, node):
         self.visit(node.block)
@@ -50,8 +66,8 @@ class Interpreter(NodeVisitor):
 
     def visit_FunctionCall(self, node):
         """
-        Execute a function call and return its value.
-        NOTE: Simplified implementation - stores params in GLOBAL_SCOPE temporarily.
+        Execute a function call with proper call stack and activation records.
+        Each function call creates its own activation record on the call stack.
         """
         func_name = node.func_name
         func_node = self.functions.get(func_name)
@@ -61,34 +77,22 @@ class Interpreter(NodeVisitor):
         
         # Evaluate actual parameter expressions
         param_values = [self.visit(arg_expr) for arg_expr in node.actual_params]
+
+        #create activation record for this function call
+        ar = ActivationRecord(func_name, self.current_ar().level+1, self.current_ar())
         
-        # Bind parameters to GLOBAL_SCOPE temporarily
-        saved_params = {}
+        # Bind parameters to activation record
         for param_node, arg_value in zip(func_node.params, param_values):
             param_name = param_node.var_node.value
-            # Save old value if exists
-            if param_name in self.GLOBAL_SCOPE:
-                saved_params[param_name] = self.GLOBAL_SCOPE[param_name]
-            # Set parameter value
-            self.GLOBAL_SCOPE[param_name] = arg_value
-        
-        # Execute function body
+            ar[param_name] = arg_value
+        #push acccctivation record onto call stack
+        self.push_ar(ar)
+        #Execute function body
         self.visit(func_node.block_node)
-        
-        # Get return value (should be assigned to function name)
-        return_value = self.GLOBAL_SCOPE.get(func_name)
-        
-        # Clean up: remove parameters from GLOBAL_SCOPE
-        for param_node in func_node.params:
-            param_name = param_node.var_node.value
-            if param_name in saved_params:
-                # Restore old value
-                self.GLOBAL_SCOPE[param_name] = saved_params[param_name]
-            else:
-                # Remove parameter
-                if param_name in self.GLOBAL_SCOPE:
-                    del self.GLOBAL_SCOPE[param_name]
-        
+        #Get return value from AR
+        return_value = ar[func_name]
+        #pop AR from call stack
+        self.pop_ar()
         return return_value
 
     def visit_Type(self, node):
@@ -125,14 +129,35 @@ class Interpreter(NodeVisitor):
 
     def visit_Assign(self, node):
         var_name = node.left.value
-        self.GLOBAL_SCOPE[var_name]=self.visit(node.right)
+        value = self.visit(node.right)
+        #Assign to current ar or global scope
+        ar = self.current_ar()
+        
+        #If we're in the global AR, also store in GLOBAL_SCOPE
+        if ar is self.global_ar:
+            self.GLOBAL_SCOPE[var_name] = value
+            ar[var_name] = value
+        #check if variable exists in current AR
+        elif var_name in ar.members or var_name == ar.name:
+            #Assign to current AR (local or return value)
+            ar[var_name] = value
+        elif var_name in self.GLOBAL_SCOPE:
+            #assign to global scope
+            self.GLOBAL_SCOPE[var_name] = value
+        else:
+            #New variable - assign to current AR
+            ar[var_name] = value
 
     def visit_Var(self, node):
         var_name = node.value
-        val = self.GLOBAL_SCOPE.get(var_name)
-        if val is None:
-            raise NameError(f"variable '{var_name}' not found")
-        return val
+        #look up in current AR first
+        ar = self.current_ar()
+        if var_name in ar.members:
+            return ar[var_name]
+        #Then look in global scope
+        if var_name in self.GLOBAL_SCOPE:
+            return self.GLOBAL_SCOPE[var_name]
+        raise NameError(f"Variable '{var_name}' is not defined")
     
     def visit_NoOp(self, node):
         pass

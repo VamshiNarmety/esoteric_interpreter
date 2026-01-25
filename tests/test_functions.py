@@ -302,3 +302,168 @@ def test_duplicate_parameter_name():
     """
     with pytest.raises(Exception, match="Duplicate parameter 'x'"):
         analyze(text)
+
+def test_recursive_function_simple():
+    """Test simple recursion without IF/ELSE (just parameter check)."""
+    text = """
+    PROGRAM Test;
+    VAR
+        result : INTEGER;
+    
+    FUNCTION CountDown(n : INTEGER) : INTEGER;
+    VAR
+        ret : INTEGER;
+    BEGIN
+        ret := n;
+        CountDown := ret
+    END;
+    
+    BEGIN
+        result := CountDown(5)
+    END.
+    """
+    res = interpret(text)
+    assert res.get('result') == 5
+
+def test_function_parameter_isolation():
+    """Test that function parameters are isolated between calls."""
+    text = """
+    PROGRAM Test;
+    VAR
+        result1, result2 : INTEGER;
+    
+    FUNCTION UseX(x : INTEGER) : INTEGER;
+    BEGIN
+        x := x + 100;
+        UseX := x
+    END;
+    
+    BEGIN
+        result1 := UseX(5);
+        result2 := UseX(10)
+    END.
+    """
+    res = interpret(text)
+    assert res.get('result1') == 105
+    assert res.get('result2') == 110
+
+def test_function_local_var_isolation():
+    """Test that local variables are isolated between calls."""
+    text = """
+    PROGRAM Test;
+    VAR
+        result1, result2 : INTEGER;
+    
+    FUNCTION Compute(x : INTEGER) : INTEGER;
+    VAR
+        local : INTEGER;
+    BEGIN
+        local := x * 10;
+        Compute := local
+    END;
+    
+    BEGIN
+        result1 := Compute(3);
+        result2 := Compute(5)
+    END.
+    """
+    res = interpret(text)
+    assert res.get('result1') == 30
+    assert res.get('result2') == 50
+
+def test_nested_function_calls_with_ar():
+    """Test nested calls with proper activation records."""
+    text = """
+    PROGRAM Test;
+    VAR
+        result : INTEGER;
+    
+    FUNCTION Add(a : INTEGER; b : INTEGER) : INTEGER;
+    BEGIN
+        Add := a + b
+    END;
+    
+    FUNCTION Multiply(x : INTEGER; y : INTEGER) : INTEGER;
+    BEGIN
+        Multiply := x * y
+    END;
+    
+    BEGIN
+        result := Add(Multiply(3, 4), Multiply(2, 5))
+    END.
+    """
+    res = interpret(text)
+    assert res.get('result') == 22  # (3*4) + (2*5) = 12 + 10
+
+def test_function_calls_preserve_global():
+    """Test that global variables are properly accessed from functions."""
+    text = """
+    PROGRAM Test;
+    VAR
+        global_var : INTEGER;
+        result : INTEGER;
+    
+    FUNCTION UseGlobal(x : INTEGER) : INTEGER;
+    BEGIN
+        UseGlobal := global_var + x
+    END;
+    
+    BEGIN
+        global_var := 100;
+        result := UseGlobal(23)
+    END.
+    """
+    res = interpret(text)
+    assert res.get('result') == 123
+    assert res.get('global_var') == 100
+
+def test_deeply_nested_calls():
+    """Test deeply nested function calls with multiple ARs."""
+    text = """
+    PROGRAM Test;
+    VAR
+        result : INTEGER;
+    
+    FUNCTION F1(a : INTEGER) : INTEGER;
+    BEGIN
+        F1 := a + 1
+    END;
+    
+    FUNCTION F2(b : INTEGER) : INTEGER;
+    BEGIN
+        F2 := F1(b) * 2
+    END;
+    
+    FUNCTION F3(c : INTEGER) : INTEGER;
+    BEGIN
+        F3 := F2(c) + 10
+    END;
+    
+    BEGIN
+        result := F3(5)
+    END.
+    """
+    res = interpret(text)
+    assert res.get('result') == 22  # ((5+1)*2) + 10 = 12 + 10
+
+def test_function_parameter_shadowing():
+    """Test that parameters shadow global variables with same name."""
+    text = """
+    PROGRAM Test;
+    VAR
+        x : INTEGER;
+        result : INTEGER;
+    
+    FUNCTION UseX(x : INTEGER) : INTEGER;
+    BEGIN
+        UseX := x * 2
+    END;
+    
+    BEGIN
+        x := 5;
+        result := UseX(10)
+    END.
+    """
+    res = interpret(text)
+    assert res.get('result') == 20  # Parameter x=10, not global x=5
+    assert res.get('x') == 5  # Global x unchanged
