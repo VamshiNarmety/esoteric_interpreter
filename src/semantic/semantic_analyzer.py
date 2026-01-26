@@ -3,7 +3,7 @@ Semantic analyzer for the Pascal interpreter.
 Builds symbol table and performs semantic checks.
 """
 import os
-from src.parser.ast_nodes import (Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp)
+from src.parser.ast_nodes import (Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp, ComparisonOp, BooleanOp, UnaryBoolOp, IfStatement)
 from src.semantic.symbols import SymbolTable, VarSymbol, BuiltinTypeSymbol, FunctionSymbol, ScopedSymbolTable
 
 # Control debug output via environment variable
@@ -55,12 +55,10 @@ class SemanticAnalyzer(NodeVisitor):
         """Visit variable declaration node."""
         type_name = node.type_node.value
         type_symbol = self.current_scope.lookup(type_name)
-        
         # Check for duplicate declarations in current scope only
         var_name = node.var_node.value
         if self.current_scope.lookup(var_name, current_scope_only=True) is not None:
             raise Exception(f"Error: Duplicate identifier '{var_name}'")
-        
         # Define variable symbol with its type
         var_symbol = VarSymbol(var_name, type_symbol)
         self.current_scope.define(var_symbol)
@@ -73,11 +71,9 @@ class SemanticAnalyzer(NodeVisitor):
             raise Exception(f"Duplicate identifier '{func_name}'")
         # Get return type
         return_type_symbol = self.current_scope.lookup(node.return_type.value)
-        
         # Create function symbol with parameters
         func_symbol = FunctionSymbol(func_name, return_type=return_type_symbol)
         self.current_scope.define(func_symbol)
-        
         # Create new scope for function
         if _DEBUG:
             print(f'ENTER scope: {func_name}')
@@ -87,27 +83,21 @@ class SemanticAnalyzer(NodeVisitor):
             enclosing_scope=self.current_scope
         )
         self.current_scope = function_scope
-        
         # Define function name as variable in its own scope (for return value assignment)
         func_return_var = VarSymbol(func_name, return_type_symbol)
         self.current_scope.define(func_return_var)
-        
         # Define parameters in function scope
         for param in node.params:
             param_type = self.current_scope.lookup(param.type_node.value)
             param_name = param.var_node.value
-            
             # Check for duplicate parameters
             if self.current_scope.lookup(param_name, current_scope_only=True) is not None:
                 raise Exception(f"Error: Duplicate parameter '{param_name}'")
-            
             var_symbol = VarSymbol(param_name, param_type)
             self.current_scope.define(var_symbol)
             func_symbol.params.append(var_symbol)
-        
         # Visit function body
         self.visit(node.block_node)
-        
         if _DEBUG:
             print(function_scope)
             print(f'LEAVE scope: {func_name}')
@@ -116,18 +106,24 @@ class SemanticAnalyzer(NodeVisitor):
     def visit_FunctionCall(self, node):
         """Visit function call node."""
         func_name = node.func_name
-        func_symbol = self.current_scope.lookup(func_name)
-        
+        func_symbol = None
+        # Walk up scopes to find FunctionSymbol (skip VarSymbol with same name)
+        scope = self.current_scope
+        while scope is not None:
+            symbol = scope.lookup(func_name, current_scope_only=True)
+            if symbol is not None:
+                if isinstance(symbol, FunctionSymbol):
+                    func_symbol = symbol
+                    break
+                # Skip VarSymbol (return value variable), continue searching
+            scope = scope.enclosing_scope
         if func_symbol is None:
             raise Exception(f"Function '{func_name}' not declared")
-        
         if not isinstance(func_symbol, FunctionSymbol):
             raise Exception(f"'{func_name}' is not a function")
-        
         # Check parameter count
         if len(node.actual_params) != len(func_symbol.params):
             raise Exception(f"Function '{func_name}' expects {len(func_symbol.params)} arguments, got {len(node.actual_params)}")
-        
         # Visit actual parameters (expressions)
         for param_expr in node.actual_params:
             self.visit(param_expr)
@@ -151,7 +147,6 @@ class SemanticAnalyzer(NodeVisitor):
             #visit children
             for child in node.children:
                 self.visit(child)
-
             if _DEBUG:
                 print(nested_scope)
                 print(f'LEAVE scope: {scope_name}')
@@ -185,6 +180,27 @@ class SemanticAnalyzer(NodeVisitor):
         self.visit(node.right)
 
     def visit_UnaryOp(self, node):
+        self.visit(node.expr)
+
+    def visit_IfStatement(self, node):
+        """Analyze if statement."""
+        self.visit(node.condition)
+        self.visit(node.then_branch)
+        if node.else_branch:
+            self.visit(node.else_branch)
+
+    def visit_ComparisonOp(self, node):
+        """Analyze comparison operation."""
+        self.visit(node.left)
+        self.visit(node.right)
+
+    def visit_BooleanOp(self, node):
+        """Analyze boolean operation."""
+        self.visit(node.left)
+        self.visit(node.right)
+
+    def visit_UnaryBoolOp(self, node):
+        """Analyze unary boolean operation."""
         self.visit(node.expr)
 
     def visit_Num(self, node):

@@ -46,6 +46,29 @@ class FunctionCall(AST):
         self.actual_params = actual_params
         self.token = token
 
+class BooleanOp:
+    def __init__(self, left, op, right):
+        self.left = left
+        self.op = op
+        self.right =right
+
+class ComparisonOp:
+    def __init__(self, left, op, right):
+        self.left = left
+        self.op = op
+        self.right = right
+
+class UnaryBoolOp:
+    def __init__(self, op, expr):
+        self.op = op
+        self.expr = expr
+
+class IfStatement:
+    def __init__(self, condition, then_branch, else_branch=None):
+        self.condition = condition
+        self.then_branch = then_branch
+        self.else_branch = else_branch
+
 class Type(AST):
     def __init__(self, token):
         self.token = token

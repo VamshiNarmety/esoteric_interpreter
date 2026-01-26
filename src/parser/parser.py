@@ -2,39 +2,10 @@
 Parser for building Abstract syntax trees.
 The parser consumes tokens from the lexer and builds an AST.
 """
-from src.lexer.token import (INTEGER_CONST, REAL_CONST, PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV, LPAREN, RPAREN, ID, ASSIGN, BEGIN, END, SEMI, DOT, PROGRAM, VAR, COLON, COMMA, INTEGER, REAL, FUNCTION, EOF)
-from src.parser.ast_nodes import (Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp)
+from src.lexer.token import (INTEGER_CONST, REAL_CONST, PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV, LPAREN, RPAREN, ID, ASSIGN, BEGIN, END, SEMI, DOT, PROGRAM, VAR, COLON, COMMA, INTEGER, REAL, FUNCTION, EQUAL, NOT_EQUAL, LESS_THAN, GREATER_THAN, LESS_EQUAL, GREATER_EQUAL, AND, OR, NOT, IF, THEN, ELSE, EOF)
+from src.parser.ast_nodes import (Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp, ComparisonOp, BooleanOp, UnaryBoolOp, IfStatement)
 
 class Parser:
-    """
-    program : PROGRAM variable SEMI block DOT
-    block : declarations compound_statement
-    declarations : (VAR (variable_declaration SEMI)+)? (FUNCTION ID (LPAREN formal_parameter_list RPAREN)? COLON type_spec SEMI block SEMI)*
-                 | empty
-    formal_parameter_list : formal_parameters
-                          | formal_parameters SEMI formal_parameter_list
-    formal_parameters : ID (COMMA ID)* COLON type_spec
-    variable_declaration : ID (COMMA ID)* COLON type_spec
-    type_spec : INTEGER | REAL
-    compound_statement : BEGIN statement_list END
-    statement_list : statement
-                   | statement SEMI statement_list
-    statement : compound_statement
-              | assignment_statement
-              | empty
-    assignment_statement : variable ASSIGN expr
-    variable : ID
-    expr : term ((PLUS | MINUS) term)*
-    term : factor ((MUL | INTEGER_DIV | FLOAT_DIV) factor)*
-    factor : PLUS factor
-           | MINUS factor
-           | INTEGER_CONST
-           | REAL_CONST
-           | LPAREN expr RPAREN
-           | function_call
-           | variable
-    empty :
-    """
     def __init__(self, lexer):
         self.lexer = lexer
         self.current_token = self.lexer.get_next_token()
@@ -159,12 +130,70 @@ class Parser:
         return results
     
     def statement(self):
-        if self.current_token.type==BEGIN:
+        if self.current_token.type == BEGIN:
             node = self.compound_statement()
-        elif self.current_token.type==ID:
+        elif self.current_token.type == IF:
+            node = self.if_statement()
+        elif self.current_token.type == ID:
             node = self.assignment_statement()
         else:
             node = self.empty()
+        return node
+    
+    def if_statement(self):
+        self.eat(IF)
+        condition = self.boolean_expression()
+        self.eat(THEN)
+        then_branch = self.statement()
+        else_branch = None
+        if self.current_token.type == ELSE:
+            self.eat(ELSE)
+            else_branch = self.statement()
+        self.eat(END)
+        return IfStatement(condition, then_branch, else_branch)
+    
+    def boolean_expression(self):
+        node = self.boolean_term()
+        while self.current_token.type == OR:
+            token = self.current_token
+            self.eat(OR)
+            node = BooleanOp(left=node, op=token, right=self.boolean_term())
+        return node
+    
+    def boolean_term(self):
+        node = self.boolean_factor()
+        while self.current_token.type == AND:
+            token = self.current_token
+            self.eat(AND)
+            node = BooleanOp(left=node, op=token, right=self.boolean_factor())
+        return node
+    
+    def boolean_factor(self):
+        if self.current_token.type == NOT:
+            token = self.current_token
+            self.eat(NOT)
+            return UnaryBoolOp(op=token, expr=self.boolean_factor())
+        else:
+            return self.comparison()
+        
+    def comparison(self):
+        node = self.expr()
+        if self.current_token.type in (EQUAL, NOT_EQUAL, LESS_THAN, GREATER_THAN, 
+                                       LESS_EQUAL, GREATER_EQUAL):
+            token = self.current_token
+            if token.type == EQUAL:
+                self.eat(EQUAL)
+            elif token.type == NOT_EQUAL:
+                self.eat(NOT_EQUAL)
+            elif token.type == LESS_THAN:
+                self.eat(LESS_THAN)
+            elif token.type == GREATER_THAN:
+                self.eat(GREATER_THAN)
+            elif token.type == LESS_EQUAL:
+                self.eat(LESS_EQUAL)
+            elif token.type == GREATER_EQUAL:
+                self.eat(GREATER_EQUAL)
+            node = ComparisonOp(left=node, op=token, right=self.expr())
         return node
     
     def assignment_statement(self):
@@ -184,9 +213,6 @@ class Parser:
         return NoOp()
 
     def factor(self):
-        """
-        factor : PLUS factor | MINUS factor | INTEGER_CONST | REAL_CONST | LPAREN expr RPAREN | function_call | variable
-        """
         token = self.current_token
         if token.type==PLUS:
             self.eat(PLUS)
@@ -230,9 +256,6 @@ class Parser:
         return FunctionCall(func_name, actual_params, token)
         
     def term(self):
-        """
-        term: factor((MUL| INTEGER_DIV | FLOAT_DIV)factor)*
-        """
         node = self.factor()
         while self.current_token.type in (MUL, INTEGER_DIV, FLOAT_DIV):
             token = self.current_token
@@ -246,9 +269,6 @@ class Parser:
         return node
     
     def expr(self):
-        """
-        expr: term((PLUS|MINUS)term)*
-        """
         node = self.term()
         while self.current_token.type in (PLUS, MINUS):
             token = self.current_token
@@ -260,9 +280,6 @@ class Parser:
         return node
     
     def parse(self):
-        """
-        Main entry point - build and return AST.
-        """
         node = self.program()
         if self.current_token.type!=EOF:
             self.error()

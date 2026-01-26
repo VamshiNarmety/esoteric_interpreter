@@ -1,4 +1,4 @@
-from src.lexer.token import (Token, INTEGER_CONST, REAL_CONST, PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV, LPAREN, RPAREN, ID, ASSIGN, BEGIN, END, SEMI, DOT, PROGRAM, VAR, COLON, COMMA, EOF, RESERVED_KEYWORDS)
+from src.lexer.token import (Token, INTEGER_CONST, REAL_CONST, PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV, LPAREN, RPAREN, ID, ASSIGN, BEGIN, END, SEMI, DOT, PROGRAM, VAR, COLON, COMMA, EOF, EQUAL, NOT_EQUAL, LESS_THAN, GREATER_THAN, LESS_EQUAL, GREATER_EQUAL, RESERVED_KEYWORDS)
 
 class Lexer:
     """
@@ -89,6 +89,29 @@ class Lexer:
             
             if self.current_char.isdigit():
                 return self.number()
+            
+            if self.current_char=='<':
+                self.advance()
+                if self.current_char=='=':
+                    self.advance()
+                    return Token(LESS_EQUAL, '<=')
+                elif self.current_char=='>':
+                    self.advance()
+                    return Token(NOT_EQUAL, '<>')
+                else:
+                    return Token(LESS_THAN, '<')
+                
+            if self.current_char=='>':
+                self.advance()
+                if self.current_char=='=':
+                    self.advance()
+                    return Token(GREATER_EQUAL, '>=')
+                else:
+                    return Token(GREATER_THAN, '>')
+            
+            if self.current_char=='=':
+                self.advance()
+                return Token(EQUAL, '=')
             
             if self.current_char == '+':
                 self.advance()

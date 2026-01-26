@@ -4,8 +4,8 @@ Uses the visitor to pattern to traverse and interpret AST nodes.
 Implements call stack and activation records for proper function execution.
 """
 from src.parser.parser import Parser
-from src.parser.ast_nodes import Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp
-from src.lexer.token import PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV
+from src.parser.ast_nodes import Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp, ComparisonOp, BooleanOp, UnaryBoolOp, IfStatement
+from src.lexer.token import (PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV, EQUAL, NOT_EQUAL, LESS_THAN, GREATER_THAN, LESS_EQUAL, GREATER_EQUAL, AND, OR, NOT)
 from src.semantic.semantic_analyzer import SemanticAnalyzer
 from src.interpreter.activation_record import ActivationRecord
 
@@ -161,6 +161,43 @@ class Interpreter(NodeVisitor):
     
     def visit_NoOp(self, node):
         pass
+
+    def visit_IfStatement(self, node):
+        """Execute if statement."""
+        condition = self.visit(node.condition)
+        if condition:
+            self.visit(node.then_branch)
+        elif node.else_branch:
+            self.visit(node.else_branch)
+
+    def visit_ComparisonOp(self, node):
+        """Evaluate comparison operation."""
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        if node.op.type == EQUAL:
+            return left == right
+        elif node.op.type == NOT_EQUAL:
+            return left != right
+        elif node.op.type == LESS_THAN:
+            return left < right
+        elif node.op.type == GREATER_THAN:
+            return left > right
+        elif node.op.type == LESS_EQUAL:
+            return left <= right
+        elif node.op.type == GREATER_EQUAL:
+            return left >= right
+        
+    def visit_BooleanOp(self, node):
+        """Evaluate boolean operation (AND, OR)."""
+        if node.op.type == AND:
+            return self.visit(node.left) and self.visit(node.right)
+        elif node.op.type == OR:
+            return self.visit(node.left) or self.visit(node.right)
+        
+    def visit_UnaryBoolOp(self, node):
+        """Evaluate unary boolean operation (NOT)."""
+        if node.op.type == NOT:
+            return not self.visit(node.expr)
     
     def interpret(self):
         """Interpret the AST."""

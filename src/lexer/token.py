@@ -41,6 +41,18 @@ VAR = 'VAR'
 COLON = 'COLON'
 COMMA = 'COMMA'
 FUNCTION = 'FUNCTION'
+EQUAL = 'EQUAL'
+NOT_EQUAL = 'NOT_EQUAL'
+LESS_THAN = 'LESS_THAN'
+GREATER_THAN = 'GREATER_THAN'
+LESS_EQUAL = 'LESS_EQUAL'
+GREATER_EQUAL = 'GREATER_EQUAL'
+AND = 'AND'
+OR = 'OR'
+NOT = 'NOT'
+IF = 'IF'
+THEN = 'THEN'
+ELSE = 'ELSE'
 EOF = 'EOF'
 
 RESERVED_KEYWORDS = {
@@ -52,4 +64,10 @@ RESERVED_KEYWORDS = {
     'BEGIN': Token(BEGIN, 'BEGIN'),
     'END': Token(END, 'END'),
     'FUNCTION': Token(FUNCTION, 'FUNCTION'),
+    'IF': Token(IF, 'IF'),
+    'THEN': Token(THEN, 'THEN'),
+    'ELSE': Token(ELSE, 'ELSE'),
+    'AND': Token(AND, 'AND'),
+    'OR': Token(OR, 'OR'),
+    'NOT': Token(NOT, 'NOT'),
 }
