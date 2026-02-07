@@ -1,0 +1,44 @@
+PROGRAM Example;
+VAR
+    n, factorial, fib : INTEGER;
+
+{ Calculate factorial recursively }
+FUNCTION Fact(x : INTEGER) : INTEGER;
+BEGIN
+    IF x <= 1 THEN
+        Fact := 1
+    ELSE
+        Fact := x * Fact(x - 1)
+    END
+END;
+
+{ Calculate fibonacci iteratively }
+FUNCTION Fib(n : INTEGER) : INTEGER;
+VAR
+    a, b, temp, i : INTEGER;
+BEGIN
+    IF n <= 1 THEN
+        Fib := n
+    ELSE
+    BEGIN
+        a := 0;
+        b := 1;
+        FOR i := 2 TO n DO
+        BEGIN
+            temp := a + b;
+            a := b;
+            b := temp
+        END;
+        Fib := b
+    END
+    END
+END;
+
+BEGIN
+    { Calculate factorial of 6 }
+    n := 6;
+    factorial := Fact(n);
+    
+    { Calculate 10th fibonacci number }
+    fib := Fib(10)
+END.

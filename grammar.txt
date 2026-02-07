@@ -57,4 +57,11 @@ EQUAL (=), NOT_EQUAL (<>), LESS_THAN (<), GREATER_THAN (>),
 LESS_EQUAL (<=), GREATER_EQUAL (>=)
 AND, OR, NOT
 LPAREN ((), RPAREN ()), SEMI (;), DOT (.), COLON (:), COMMA (,)
+COMMENT ({ ... })
 EOF
+
+Notes
+=====
+- Comments are enclosed in curly braces { } and can span multiple lines
+- Comments are ignored by the lexer and do not produce tokens
+- INTEGER_DIV uses the '//' operator (different from standard Pascal's DIV keyword)
