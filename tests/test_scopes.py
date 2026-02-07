@@ -69,7 +69,7 @@ def test_undeclared_variable_error():
         y := 5
     END.
     """
-    with pytest.raises(Exception, match="Variable 'y' not declared"):
+    with pytest.raises(Exception, match=r"[Cc]annot assign to undeclared variable 'y'"):
         analyze(text)
 
 def test_duplicate_variable_in_same_scope():
@@ -217,7 +217,7 @@ def test_undeclared_variable_in_nested_scope():
         END
     END.
     """
-    with pytest.raises(Exception, match="Variable 'y' not declared"):
+    with pytest.raises(Exception, match=r"[Cc]annot assign to undeclared variable 'y'"):
         analyze(text)
 
 def test_complex_nested_structure():

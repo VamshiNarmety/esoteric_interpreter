@@ -4,14 +4,16 @@ The parser consumes tokens from the lexer and builds an AST.
 """
 from src.lexer.token import (INTEGER_CONST, REAL_CONST, PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV, LPAREN, RPAREN, ID, ASSIGN, BEGIN, END, SEMI, DOT, PROGRAM, VAR, COLON, COMMA, INTEGER, REAL, FUNCTION, EQUAL, NOT_EQUAL, LESS_THAN, GREATER_THAN, LESS_EQUAL, GREATER_EQUAL, AND, OR, NOT, IF, THEN, ELSE, EOF, WHILE, FOR, DO, TO, DOWNTO)
 from src.parser.ast_nodes import (Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp, ComparisonOp, BooleanOp, UnaryBoolOp, IfStatement, WhileLoop, ForLoop)
+from src.errors import ParserError
 
 class Parser:
     def __init__(self, lexer):
         self.lexer = lexer
         self.current_token = self.lexer.get_next_token()
 
-    def error(self):
-        raise Exception('Invalid syntax')
+    def error(self, message=None):
+        msg = message or f"Invalid syntax: unexpected token '{self.current_token.type}'"
+        raise ParserError(msg)
     
     def eat(self, token_type):
         """
@@ -20,7 +22,7 @@ class Parser:
         if self.current_token.type==token_type:
             self.current_token = self.lexer.get_next_token()
         else:
-            self.error()
+            self.error(f"Expected token '{token_type}', got {self.current_token.type}")
 
     def program(self):
         self.eat(PROGRAM)

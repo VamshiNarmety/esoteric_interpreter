@@ -1,5 +1,5 @@
 from src.lexer.token import (Token, INTEGER_CONST, REAL_CONST, PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV, LPAREN, RPAREN, ID, ASSIGN, BEGIN, END, SEMI, DOT, PROGRAM, VAR, COLON, COMMA, EOF, EQUAL, NOT_EQUAL, LESS_THAN, GREATER_THAN, LESS_EQUAL, GREATER_EQUAL, RESERVED_KEYWORDS)
-
+from src.errors import LexerError
 class Lexer:
     """
     Lexical analyzer
@@ -8,19 +8,24 @@ class Lexer:
         self.text = text
         self.pos = 0
         self.current_char = self.text[self.pos] if self.text else None
+        self.line = 1
+        self.column = 1
 
-    def error(self):
-        raise Exception('Invalid character')
+    def error(self, message=None):
+        msg = message or f"Invalid character '{self.current_char}'"
+        raise LexerError(msg, self.line, self.column)
     
     def advance(self):
-        """
-        Move the 'pos' pointer and set the 'current_char' variable.
-        """
+        """Move to next character and update line/column."""
+        if self.current_char=='\n':
+            self.line+=1
+            self.column=0
         self.pos += 1
-        if self.pos>len(self.text)-1:
+        if self.pos>=len(self.text):
             self.current_char = None
         else:
             self.current_char = self.text[self.pos]
+            self.column+=1
 
     def peek(self):
         """Look ahead one character without consuming it"""
@@ -36,8 +41,11 @@ class Lexer:
 
     def skip_comment(self):
         """Skip comments enclosed in {}."""
-        while self.current_char!='}':
+        start_line = self.line
+        while self.current_char is not None and self.current_char != '}':
             self.advance()
+        if self.current_char is None:
+            self.error(f"Unterminated comment starting at line {start_line}")
         self.advance()
 
     def number(self):
@@ -48,6 +56,8 @@ class Lexer:
         if self.current_char=='.':
             result+=self.current_char
             self.advance()
+            if self.current_char is None or not self.current_char.isdigit():
+                self.error("Invalid number format: expected digit after decimal point")
             while self.current_char is not None and self.current_char.isdigit():
                 result+=self.current_char
                 self.advance()
@@ -73,6 +83,11 @@ class Lexer:
         while self.current_char is not None:
             if self.current_char.isspace():
                 self.skip_whitespace()
+                continue
+
+            if self.current_char == '{':
+                self.advance()
+                self.skip_comment()
                 continue
 
             if self.current_char.isalpha() or self.current_char=='_':

@@ -8,6 +8,8 @@ from src.parser.ast_nodes import Program, Block, VarDecl, FunctionDecl, Param, F
 from src.lexer.token import (PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV, EQUAL, NOT_EQUAL, LESS_THAN, GREATER_THAN, LESS_EQUAL, GREATER_EQUAL, AND, OR, NOT)
 from src.semantic.semantic_analyzer import SemanticAnalyzer
 from src.interpreter.activation_record import ActivationRecord
+from src.errors import RuntimeError
+import sys
 
 class NodeVisitor:
     """
@@ -71,16 +73,14 @@ class Interpreter(NodeVisitor):
         """
         func_name = node.func_name
         func_node = self.functions.get(func_name)
-        
         if func_node is None:
-            raise Exception(f"Function '{func_name}' not found")
-        
+            raise RuntimeError(f"Undefined Function '{func_name}'")
+        if len(self.call_stack) > 1000:
+            raise RuntimeError(f"Stack overflow: maximum recursion depth exceeded in '{func_name}'")
         # Evaluate actual parameter expressions
         param_values = [self.visit(arg_expr) for arg_expr in node.actual_params]
-
         #create activation record for this function call
         ar = ActivationRecord(func_name, self.current_ar().level+1, self.current_ar())
-        
         # Bind parameters to activation record
         for param_node, arg_value in zip(func_node.params, param_values):
             param_name = param_node.var_node.value
@@ -107,8 +107,14 @@ class Interpreter(NodeVisitor):
         elif node.op.type==MUL:
             return self.visit(node.left) * self.visit(node.right)
         elif node.op.type==INTEGER_DIV:
+            divisor = self.visit(node.right)
+            if divisor==0:
+                raise RuntimeError("Division by zero.")
             return self.visit(node.left) // self.visit(node.right)
         elif node.op.type==FLOAT_DIV:
+            divisor = self.visit(node.right)
+            if divisor==0:
+                raise RuntimeError("Division by zero.")
             return self.visit(node.left)/self.visit(node.right)
         
     def visit_Num(self, node):
@@ -157,7 +163,7 @@ class Interpreter(NodeVisitor):
         #Then look in global scope
         if var_name in self.GLOBAL_SCOPE:
             return self.GLOBAL_SCOPE[var_name]
-        raise NameError(f"Variable '{var_name}' is not defined")
+        raise RuntimeError(f"Variable '{var_name}' used before assignment")
     
     def visit_NoOp(self, node):
         pass

@@ -244,7 +244,7 @@ def test_undeclared_function_call():
         result := UndeclaredFunc()
     END.
     """
-    with pytest.raises(Exception, match="Function 'UndeclaredFunc' not declared"):
+    with pytest.raises(Exception, match="Undefined function 'UndeclaredFunc'"):
         analyze(text)
 
 def test_function_wrong_parameter_count():
@@ -263,7 +263,7 @@ def test_function_wrong_parameter_count():
         result := Add(1)
     END.
     """
-    with pytest.raises(Exception, match="expects 2 arguments, got 1"):
+    with pytest.raises(Exception, match="expects 2 parameter"):
         analyze(text)
 
 def test_duplicate_function_declaration():

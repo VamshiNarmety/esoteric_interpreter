@@ -5,6 +5,7 @@ Builds symbol table and performs semantic checks.
 import os
 from src.parser.ast_nodes import (Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp, ComparisonOp, BooleanOp, UnaryBoolOp, IfStatement, WhileLoop, ForLoop)
 from src.semantic.symbols import SymbolTable, VarSymbol, BuiltinTypeSymbol, FunctionSymbol, ScopedSymbolTable
+from src.errors import SemanticError
 
 # Control debug output via environment variable
 _DEBUG = os.environ.get('PASCAL_DEBUG', '0') == '1'
@@ -28,6 +29,9 @@ class SemanticAnalyzer(NodeVisitor):
         self.current_scope=None
         self.scope_counter = 0
         self.global_scope = None  # Store reference for tests
+        
+    def error(self, message):
+        raise SemanticError(message)
 
     def visit_Program(self, node):
         if _DEBUG:
@@ -58,7 +62,7 @@ class SemanticAnalyzer(NodeVisitor):
         # Check for duplicate declarations in current scope only
         var_name = node.var_node.value
         if self.current_scope.lookup(var_name, current_scope_only=True) is not None:
-            raise Exception(f"Error: Duplicate identifier '{var_name}'")
+            self.error(f"Duplicate identifier '{var_name}'")
         # Define variable symbol with its type
         var_symbol = VarSymbol(var_name, type_symbol)
         self.current_scope.define(var_symbol)
@@ -68,7 +72,7 @@ class SemanticAnalyzer(NodeVisitor):
         func_name = node.func_name
         #check for duplicate function declaration
         if self.current_scope.lookup(func_name, current_scope_only=True) is not None:
-            raise Exception(f"Duplicate identifier '{func_name}'")
+            self.error(f"Duplicate identifier '{func_name}'")
         # Get return type
         return_type_symbol = self.current_scope.lookup(node.return_type.value)
         # Create function symbol with parameters
@@ -92,7 +96,7 @@ class SemanticAnalyzer(NodeVisitor):
             param_name = param.var_node.value
             # Check for duplicate parameters
             if self.current_scope.lookup(param_name, current_scope_only=True) is not None:
-                raise Exception(f"Error: Duplicate parameter '{param_name}'")
+                self.error(f"Duplicate parameter '{param_name}'")
             var_symbol = VarSymbol(param_name, param_type)
             self.current_scope.define(var_symbol)
             func_symbol.params.append(var_symbol)
@@ -106,27 +110,28 @@ class SemanticAnalyzer(NodeVisitor):
     def visit_FunctionCall(self, node):
         """Visit function call node."""
         func_name = node.func_name
+        # First check if it's a function in enclosing scope (for recursion)
+        # When in a function, the function name is also a variable (return value)
+        # so we need to check enclosing scope first
         func_symbol = None
-        # Walk up scopes to find FunctionSymbol (skip VarSymbol with same name)
         scope = self.current_scope
         while scope is not None:
             symbol = scope.lookup(func_name, current_scope_only=True)
-            if symbol is not None:
-                if isinstance(symbol, FunctionSymbol):
-                    func_symbol = symbol
-                    break
-                # Skip VarSymbol (return value variable), continue searching
+            if symbol is not None and isinstance(symbol, FunctionSymbol):
+                func_symbol = symbol
+                break
             scope = scope.enclosing_scope
+        
         if func_symbol is None:
-            raise Exception(f"Function '{func_name}' not declared")
-        if not isinstance(func_symbol, FunctionSymbol):
-            raise Exception(f"'{func_name}' is not a function")
+            self.error(f"Undefined function '{func_name}'")
+        
         # Check parameter count
-        if len(node.actual_params) != len(func_symbol.params):
-            raise Exception(f"Function '{func_name}' expects {len(func_symbol.params)} arguments, got {len(node.actual_params)}")
-        # Visit actual parameters (expressions)
-        for param_expr in node.actual_params:
-            self.visit(param_expr)
+        expected_params = len(func_symbol.params)
+        actual_params = len(node.actual_params) if node.actual_params else 0
+        if expected_params != actual_params:
+            self.error(f"Function '{func_name}' expects {expected_params} parameter(s), got {actual_params}")
+        for param_node in (node.actual_params or []):
+            self.visit(param_node)
 
     def visit_Compound(self, node):
         """
@@ -164,8 +169,7 @@ class SemanticAnalyzer(NodeVisitor):
         var_name = node.left.value
         var_symbol = self.current_scope.lookup(var_name)
         if var_symbol is None:
-            raise Exception(f"Variable '{var_name}' not declared")
-        
+            self.error(f"Cannot assign to undeclared variable '{var_name}'")
         self.visit(node.right)
 
     def visit_Var(self, node):
@@ -173,7 +177,7 @@ class SemanticAnalyzer(NodeVisitor):
         var_name = node.value
         var_symbol = self.current_scope.lookup(var_name)
         if var_symbol is None:
-            raise Exception(f"Variable '{var_name}' not declared")
+            self.error(f"Undeclared variable '{var_name}'")
         
     def visit_BinOp(self, node):
         self.visit(node.left)
@@ -211,7 +215,7 @@ class SemanticAnalyzer(NodeVisitor):
         var_name = node.var_node.value
         var_symbol = self.current_scope.lookup(var_name)
         if var_symbol is None:
-            raise Exception(f"Error: undefined variable '{var_name}'")
+            self.error(f"undefined variable '{var_name}' in FOR loop")
         self.visit(node.start_expr)
         self.visit(node.end_expr)
         self.visit(node.body)

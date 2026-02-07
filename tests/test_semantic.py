@@ -58,7 +58,7 @@ def test_undeclared_variable_error():
     parser = Parser(lexer)
     tree = parser.parse()
     semantic_analyzer = SemanticAnalyzer()
-    with pytest.raises(Exception, match="Variable 'x' not declared"):
+    with pytest.raises(Exception, match=r"[Cc]annot assign to undeclared variable 'x'"):
         semantic_analyzer.visit(tree)
 
 def test_variable_reference_after_declaration():
@@ -90,7 +90,7 @@ def test_undeclared_variable_in_expression():
     parser = Parser(lexer)
     tree = parser.parse()
     semantic_analyzer = SemanticAnalyzer()
-    with pytest.raises(Exception, match="Variable 'y' not declared"):
+    with pytest.raises(Exception, match="Undeclared variable 'y'"):
         semantic_analyzer.visit(tree)
 
 def test_multiple_var_sections():
