@@ -2,8 +2,8 @@
 Parser for building Abstract syntax trees.
 The parser consumes tokens from the lexer and builds an AST.
 """
-from src.lexer.token import (INTEGER_CONST, REAL_CONST, PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV, LPAREN, RPAREN, ID, ASSIGN, BEGIN, END, SEMI, DOT, PROGRAM, VAR, COLON, COMMA, INTEGER, REAL, FUNCTION, EQUAL, NOT_EQUAL, LESS_THAN, GREATER_THAN, LESS_EQUAL, GREATER_EQUAL, AND, OR, NOT, IF, THEN, ELSE, EOF)
-from src.parser.ast_nodes import (Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp, ComparisonOp, BooleanOp, UnaryBoolOp, IfStatement)
+from src.lexer.token import (INTEGER_CONST, REAL_CONST, PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV, LPAREN, RPAREN, ID, ASSIGN, BEGIN, END, SEMI, DOT, PROGRAM, VAR, COLON, COMMA, INTEGER, REAL, FUNCTION, EQUAL, NOT_EQUAL, LESS_THAN, GREATER_THAN, LESS_EQUAL, GREATER_EQUAL, AND, OR, NOT, IF, THEN, ELSE, EOF, WHILE, FOR, DO, TO, DOWNTO)
+from src.parser.ast_nodes import (Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp, ComparisonOp, BooleanOp, UnaryBoolOp, IfStatement, WhileLoop, ForLoop)
 
 class Parser:
     def __init__(self, lexer):
@@ -134,6 +134,10 @@ class Parser:
             node = self.compound_statement()
         elif self.current_token.type == IF:
             node = self.if_statement()
+        elif self.current_token.type==WHILE:
+            node = self.while_statement()
+        elif self.current_token.type==FOR:
+            node = self.for_statement()
         elif self.current_token.type == ID:
             node = self.assignment_statement()
         else:
@@ -151,6 +155,32 @@ class Parser:
             else_branch = self.statement()
         self.eat(END)
         return IfStatement(condition, then_branch, else_branch)
+    
+    def while_statement(self):
+        self.eat(WHILE)
+        condition = self.boolean_expression()
+        self.eat(DO)
+        body = self.statement()
+        return WhileLoop(condition, body)
+    
+    def for_statement(self):
+        self.eat(FOR)
+        var_node = self.variable()
+        self.eat(ASSIGN)
+        start_expr = self.expr()
+        #check if TO or DOWNTO
+        is_downto = False
+        if self.current_token.type==TO:
+            self.eat(TO)
+        elif self.current_token.type==DOWNTO:
+            self.eat(DOWNTO)
+            is_downto=True
+        else:
+            self.error()
+        end_expr = self.expr()
+        self.eat(DO)
+        body = self.statement()
+        return ForLoop(var_node, start_expr, end_expr, body, is_downto)
     
     def boolean_expression(self):
         node = self.boolean_term()
@@ -173,6 +203,11 @@ class Parser:
             token = self.current_token
             self.eat(NOT)
             return UnaryBoolOp(op=token, expr=self.boolean_factor())
+        elif self.current_token.type == LPAREN:
+            self.eat(LPAREN)
+            node = self.boolean_expression()
+            self.eat(RPAREN)
+            return node
         else:
             return self.comparison()
         

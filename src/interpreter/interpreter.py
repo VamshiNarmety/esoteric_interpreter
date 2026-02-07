@@ -4,7 +4,7 @@ Uses the visitor to pattern to traverse and interpret AST nodes.
 Implements call stack and activation records for proper function execution.
 """
 from src.parser.parser import Parser
-from src.parser.ast_nodes import Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp, ComparisonOp, BooleanOp, UnaryBoolOp, IfStatement
+from src.parser.ast_nodes import Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp, ComparisonOp, BooleanOp, UnaryBoolOp, IfStatement, WhileLoop, ForLoop
 from src.lexer.token import (PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV, EQUAL, NOT_EQUAL, LESS_THAN, GREATER_THAN, LESS_EQUAL, GREATER_EQUAL, AND, OR, NOT)
 from src.semantic.semantic_analyzer import SemanticAnalyzer
 from src.interpreter.activation_record import ActivationRecord
@@ -198,6 +198,40 @@ class Interpreter(NodeVisitor):
         """Evaluate unary boolean operation (NOT)."""
         if node.op.type == NOT:
             return not self.visit(node.expr)
+        
+    def visit_WhileLoop(self, node):
+        while self.visit(node.condition):
+            self.visit(node.body)
+            
+    def visit_ForLoop(self, node):
+        var_name = node.var_node.value
+        start_value = self.visit(node.start_expr)
+        end_value = self.visit(node.end_expr)
+        ar = self.current_ar()
+        if node.is_downto:
+            current = start_value
+            while current>=end_value:
+                if ar is self.global_ar:
+                    self.GLOBAL_SCOPE[var_name] = current
+                ar[var_name] = current
+                self.visit(node.body)
+                current-=1
+            # Set final value after loop (one past the end)
+            if ar is self.global_ar:
+                self.GLOBAL_SCOPE[var_name] = current
+            ar[var_name] = current
+        else:
+            current = start_value
+            while current<=end_value:
+                if ar is self.global_ar:
+                    self.GLOBAL_SCOPE[var_name] = current
+                ar[var_name] = current
+                self.visit(node.body)
+                current+=1
+            # Set final value after loop (one past the end)
+            if ar is self.global_ar:
+                self.GLOBAL_SCOPE[var_name] = current
+            ar[var_name] = current
     
     def interpret(self):
         """Interpret the AST."""

@@ -3,7 +3,7 @@ Semantic analyzer for the Pascal interpreter.
 Builds symbol table and performs semantic checks.
 """
 import os
-from src.parser.ast_nodes import (Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp, ComparisonOp, BooleanOp, UnaryBoolOp, IfStatement)
+from src.parser.ast_nodes import (Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp, ComparisonOp, BooleanOp, UnaryBoolOp, IfStatement, WhileLoop, ForLoop)
 from src.semantic.symbols import SymbolTable, VarSymbol, BuiltinTypeSymbol, FunctionSymbol, ScopedSymbolTable
 
 # Control debug output via environment variable
@@ -202,6 +202,19 @@ class SemanticAnalyzer(NodeVisitor):
     def visit_UnaryBoolOp(self, node):
         """Analyze unary boolean operation."""
         self.visit(node.expr)
+        
+    def visit_WhileLoop(self, node):
+        self.visit(node.condition)
+        self.visit(node.body)
+        
+    def visit_ForLoop(self, node):
+        var_name = node.var_node.value
+        var_symbol = self.current_scope.lookup(var_name)
+        if var_symbol is None:
+            raise Exception(f"Error: undefined variable '{var_name}'")
+        self.visit(node.start_expr)
+        self.visit(node.end_expr)
+        self.visit(node.body)
 
     def visit_Num(self, node):
         pass

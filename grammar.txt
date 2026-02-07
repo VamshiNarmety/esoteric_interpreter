@@ -16,12 +16,18 @@ statement_list : statement
 statement : compound_statement
           | assignment_statement
           | if_statement
+          | while_statement
+          | for_statement
           | empty
 assignment_statement : variable ASSIGN expr
 if_statement : IF boolean_expression THEN statement (ELSE statement)? END
+while_statement : WHILE boolean_expression DO statement
+for_statement : FOR ID ASSIGN expr TO expr DO statement
+              | FOR ID ASSIGN expr DOWNTO expr DO statement
 boolean_expression : boolean_term ((OR) boolean_term)*
 boolean_term : boolean_factor ((AND) boolean_factor)*
 boolean_factor : NOT boolean_factor
+               | LPAREN boolean_expression RPAREN
                | comparison
 comparison : expr ((EQUAL | NOT_EQUAL | LESS_THAN | GREATER_THAN | 
                    LESS_EQUAL | GREATER_EQUAL) expr)?
@@ -41,6 +47,7 @@ empty :
 Tokens
 ======
 PROGRAM, VAR, FUNCTION, BEGIN, END, IF, THEN, ELSE
+WHILE, DO, FOR, TO, DOWNTO
 INTEGER, REAL
 INTEGER_CONST, REAL_CONST
 ID (identifier)

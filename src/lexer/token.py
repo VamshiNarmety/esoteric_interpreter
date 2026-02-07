@@ -53,6 +53,11 @@ NOT = 'NOT'
 IF = 'IF'
 THEN = 'THEN'
 ELSE = 'ELSE'
+WHILE = 'WHILE'
+DO = 'DO'
+FOR = 'FOR'
+TO = 'TO'
+DOWNTO = 'DOWNTO'
 EOF = 'EOF'
 
 RESERVED_KEYWORDS = {
@@ -70,4 +75,9 @@ RESERVED_KEYWORDS = {
     'AND': Token(AND, 'AND'),
     'OR': Token(OR, 'OR'),
     'NOT': Token(NOT, 'NOT'),
+    'WHILE': Token(WHILE, 'WHILE'),
+    'DO': Token(DO, 'DO'),
+    'FOR': Token(FOR, 'FOR'), 
+    'TO': Token(TO, 'TO'),
+    'DOWNTO': Token(DOWNTO, 'DOWNTO')
 }

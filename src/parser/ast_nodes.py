@@ -68,6 +68,19 @@ class IfStatement:
         self.condition = condition
         self.then_branch = then_branch
         self.else_branch = else_branch
+        
+class WhileLoop(AST):
+    def __init__(self, condition, body):
+        self.condition = condition
+        self.body = body
+        
+class ForLoop(AST):
+    def __init__(self, var_node, start_expr, end_expr, body, is_downto=False):
+        self.var_node = var_node
+        self.start_expr = start_expr
+        self.end_expr = end_expr
+        self.body = body
+        self.is_downto = is_downto
 
 class Type(AST):
     def __init__(self, token):
