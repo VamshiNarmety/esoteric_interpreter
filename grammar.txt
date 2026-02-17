@@ -18,12 +18,16 @@ statement : compound_statement
           | if_statement
           | while_statement
           | for_statement
+          | print_statement
           | empty
 assignment_statement : variable ASSIGN expr
 if_statement : IF boolean_expression THEN statement (ELSE statement)? END
 while_statement : WHILE boolean_expression DO statement
 for_statement : FOR ID ASSIGN expr TO expr DO statement
               | FOR ID ASSIGN expr DOWNTO expr DO statement
+print_statement : PRINT LPAREN expr_list RPAREN
+                | WRITELN LPAREN expr_list RPAREN
+expr_list : expr (COMMA expr)*
 boolean_expression : boolean_term ((OR) boolean_term)*
 boolean_term : boolean_factor ((AND) boolean_factor)*
 boolean_factor : NOT boolean_factor
@@ -48,6 +52,7 @@ Tokens
 ======
 PROGRAM, VAR, FUNCTION, BEGIN, END, IF, THEN, ELSE
 WHILE, DO, FOR, TO, DOWNTO
+PRINT, WRITELN
 INTEGER, REAL
 INTEGER_CONST, REAL_CONST
 ID (identifier)
@@ -65,3 +70,5 @@ Notes
 - Comments are enclosed in curly braces { } and can span multiple lines
 - Comments are ignored by the lexer and do not produce tokens
 - INTEGER_DIV uses the '//' operator (different from standard Pascal's DIV keyword)
+- PRINT outputs without newline; WRITELN outputs with newline
+- Both PRINT and WRITELN accept multiple comma-separated expressions

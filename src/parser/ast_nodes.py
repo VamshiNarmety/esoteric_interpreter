@@ -81,6 +81,11 @@ class ForLoop(AST):
         self.end_expr = end_expr
         self.body = body
         self.is_downto = is_downto
+        
+class Print(AST):
+    def __init__(self, expressions, newline=True):
+        self.expressions = expressions #List of expressions to print
+        self.newline = newline #True for WRITELN, False for PRINT
 
 class Type(AST):
     def __init__(self, token):

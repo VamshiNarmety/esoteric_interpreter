@@ -10,6 +10,7 @@ A complete interpreter for a Pascal-like esoteric programming language implement
 - Recursive function calls
 - Conditional statements (IF-THEN-ELSE)
 - Loop constructs (WHILE, FOR...TO, FOR...DOWNTO)
+- Output statements (PRINT, WRITELN)
 - Boolean expressions with logical operators (AND, OR, NOT)
 - Comparison operators (=, <>, <, >, <=, >=)
 - Multi-line comments using curly braces
@@ -129,6 +130,22 @@ FOR i := 10 DOWNTO 1 DO
     sum := sum + i;
 ```
 
+### Output Statements
+
+WRITELN prints values with a newline:
+```pascal
+WRITELN(x);           { Print one value }
+WRITELN(x, y, z);     { Print multiple values separated by spaces }
+WRITELN(x + y);       { Print expressions }
+```
+
+PRINT outputs without a newline:
+```pascal
+PRINT(x);             { Print without newline }
+PRINT(100);
+WRITELN(200);         { Completes the line }
+```
+
 ### Comments
 
 Comments are enclosed in curly braces and can span multiple lines:
@@ -176,7 +193,8 @@ END;
 BEGIN
     n := 6;
     factorial := Fact(n);
-    fib := Fib(10)
+    fib := Fib(10);
+    WRITELN(factorial, fib)
 END.
 ```
 

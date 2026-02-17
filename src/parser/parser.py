@@ -2,8 +2,8 @@
 Parser for building Abstract syntax trees.
 The parser consumes tokens from the lexer and builds an AST.
 """
-from src.lexer.token import (INTEGER_CONST, REAL_CONST, PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV, LPAREN, RPAREN, ID, ASSIGN, BEGIN, END, SEMI, DOT, PROGRAM, VAR, COLON, COMMA, INTEGER, REAL, FUNCTION, EQUAL, NOT_EQUAL, LESS_THAN, GREATER_THAN, LESS_EQUAL, GREATER_EQUAL, AND, OR, NOT, IF, THEN, ELSE, EOF, WHILE, FOR, DO, TO, DOWNTO)
-from src.parser.ast_nodes import (Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp, ComparisonOp, BooleanOp, UnaryBoolOp, IfStatement, WhileLoop, ForLoop)
+from src.lexer.token import (INTEGER_CONST, REAL_CONST, PLUS, MINUS, MUL, INTEGER_DIV, FLOAT_DIV, LPAREN, RPAREN, ID, ASSIGN, BEGIN, END, SEMI, DOT, PROGRAM, VAR, COLON, COMMA, INTEGER, REAL, FUNCTION, EQUAL, NOT_EQUAL, LESS_THAN, GREATER_THAN, LESS_EQUAL, GREATER_EQUAL, AND, OR, NOT, IF, THEN, ELSE, EOF, WHILE, FOR, DO, TO, DOWNTO, PRINT, WRITELN)
+from src.parser.ast_nodes import (Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp, ComparisonOp, BooleanOp, UnaryBoolOp, IfStatement, WhileLoop, ForLoop, Print)
 from src.errors import ParserError
 
 class Parser:
@@ -140,6 +140,8 @@ class Parser:
             node = self.while_statement()
         elif self.current_token.type==FOR:
             node = self.for_statement()
+        elif self.current_token.type in (PRINT, WRITELN):
+            node = self.print_statement()
         elif self.current_token.type == ID:
             node = self.assignment_statement()
         else:
@@ -183,6 +185,23 @@ class Parser:
         self.eat(DO)
         body = self.statement()
         return ForLoop(var_node, start_expr, end_expr, body, is_downto)
+    
+    def print_statement(self):
+        newline = True
+        if self.current_token.type==PRINT:
+            self.eat(PRINT)
+            newline=False
+        elif self.current_token.type==WRITELN:
+            self.eat(WRITELN)
+            newline=True
+        self.eat(LPAREN)
+        expressions = []
+        expressions.append(self.expr())
+        while self.current_token.type==COMMA:
+            self.eat(COMMA)
+            expressions.append(self.expr())
+        self.eat(RPAREN)
+        return Print(expressions, newline)
     
     def boolean_expression(self):
         node = self.boolean_term()

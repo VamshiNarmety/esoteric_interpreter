@@ -58,6 +58,8 @@ DO = 'DO'
 FOR = 'FOR'
 TO = 'TO'
 DOWNTO = 'DOWNTO'
+PRINT = 'PRINT'
+WRITELN = 'WRITELN'
 EOF = 'EOF'
 
 RESERVED_KEYWORDS = {
@@ -79,5 +81,7 @@ RESERVED_KEYWORDS = {
     'DO': Token(DO, 'DO'),
     'FOR': Token(FOR, 'FOR'), 
     'TO': Token(TO, 'TO'),
-    'DOWNTO': Token(DOWNTO, 'DOWNTO')
+    'DOWNTO': Token(DOWNTO, 'DOWNTO'),
+    'PRINT': Token(PRINT, 'PRINT'),
+    'WRITELN': Token(WRITELN, 'WRITELN')
 }

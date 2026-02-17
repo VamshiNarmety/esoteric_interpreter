@@ -40,5 +40,8 @@ BEGIN
     factorial := Fact(n);
     
     { Calculate 10th fibonacci number }
-    fib := Fib(10)
+    fib := Fib(10);
+    
+    { Display results }
+    WRITELN(factorial, fib)
 END.

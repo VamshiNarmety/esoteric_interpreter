@@ -1,0 +1,21 @@
+PROGRAM PrintDemo;
+VAR
+    i, sum : INTEGER;
+
+BEGIN
+    { Demonstrate WRITELN - prints with newline }
+    WRITELN(100, 200, 300);
+    
+    { Print loop output }
+    sum := 0;
+    FOR i := 1 TO 5 DO
+    BEGIN
+        sum := sum + i;
+        WRITELN(i, sum)
+    END;
+    
+    { Demonstrate PRINT - prints without newline }
+    PRINT(10);
+    PRINT(20);
+    WRITELN(30)
+END.

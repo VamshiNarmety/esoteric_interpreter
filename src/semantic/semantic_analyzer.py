@@ -3,7 +3,7 @@ Semantic analyzer for the Pascal interpreter.
 Builds symbol table and performs semantic checks.
 """
 import os
-from src.parser.ast_nodes import (Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp, ComparisonOp, BooleanOp, UnaryBoolOp, IfStatement, WhileLoop, ForLoop)
+from src.parser.ast_nodes import (Program, Block, VarDecl, FunctionDecl, Param, FunctionCall, Type, BinOp, Num, UnaryOp, Compound, Assign, Var, NoOp, ComparisonOp, BooleanOp, UnaryBoolOp, IfStatement, WhileLoop, ForLoop, Print)
 from src.semantic.symbols import SymbolTable, VarSymbol, BuiltinTypeSymbol, FunctionSymbol, ScopedSymbolTable
 from src.errors import SemanticError
 
@@ -219,6 +219,11 @@ class SemanticAnalyzer(NodeVisitor):
         self.visit(node.start_expr)
         self.visit(node.end_expr)
         self.visit(node.body)
+    
+    def visit_Print(self, node):
+        """Validate all expressions in print statement"""
+        for expr in node.expressions:
+            self.visit(expr)
 
     def visit_Num(self, node):
         pass
